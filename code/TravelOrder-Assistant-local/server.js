@@ -5,6 +5,7 @@ import { ask } from './agent.js';
 
 const PORT = Number(process.env.PORT) || 4010;
 const page = new URL('./public/index.html', import.meta.url);
+const startPage = new URL('./public/start.html', import.meta.url);
 
 function send(res, status, body, type = 'application/json') {
   res.writeHead(status, { 'Content-Type': `${type}; charset=utf-8` });
@@ -15,6 +16,9 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) {
       return send(res, 200, await readFile(page, 'utf8'), 'text/html');
+    }
+    if (req.method === 'GET' && (req.url === '/start' || req.url === '/start.html')) {
+      return send(res, 200, await readFile(startPage, 'utf8'), 'text/html');
     }
     if (req.method === 'POST' && req.url === '/api/chat') {
       let raw = '';
@@ -36,5 +40,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`TravelOrder Assistant (local copy) running at http://localhost:${PORT}`);
+  console.log(`TravelOrder AI start page:  http://localhost:${PORT}/start`);
+  console.log(`TravelOrder Assistant (local copy of the Joule agent): http://localhost:${PORT}`);
 });

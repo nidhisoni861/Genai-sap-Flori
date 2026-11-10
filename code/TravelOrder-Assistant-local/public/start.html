@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TravelOrder AI</title>
+<style>
+  :root { --blue:#0a6ed1; --shell:#354a5f; --bg:#f5f6f7; --card:#fff; --text:#32363a; --muted:#6a6d70; --line:#d9d9d9; --ai:#efe6fb; --aiText:#5d36a3; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"72","Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--shell); color:#fff; padding:12px 20px; display:flex; align-items:center; gap:12px; }
+  header .logo { background:#fff; color:var(--blue); font-weight:700; padding:2px 8px; border-radius:4px; }
+  header h1 { font-size:18px; margin:0; font-weight:600; }
+  header .tag { margin-left:auto; font-size:12px; opacity:.85; }
+  main { max-width:1200px; margin:0 auto; padding:20px 16px 32px; }
+  .intro h2 { margin:0 0 4px; font-size:22px; }
+  .intro p { margin:0 0 18px; color:var(--muted); font-size:14px; }
+  .flow { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; position:relative; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; display:flex; flex-direction:column; position:relative; }
+  .card:not(:last-child)::after { content:"\2192"; position:absolute; right:-14px; top:42px; transform:translateX(50%); color:var(--blue); font-size:22px; font-weight:700; background:var(--bg); width:22px; text-align:center; z-index:1; }
+  .num { width:30px; height:30px; border-radius:50%; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; margin-bottom:8px; }
+  .card h3 { margin:0 0 2px; font-size:16px; }
+  .card .what { font-size:13px; color:var(--muted); margin:0 0 10px; min-height:36px; }
+  .card dl { margin:0 0 12px; font-size:12px; }
+  .card dt { font-weight:600; margin-top:6px; }
+  .card dd { margin:0; }
+  .ai { display:inline-block; background:var(--ai); color:var(--aiText); border-radius:4px; padding:1px 6px; }
+  .card a.open { margin-top:auto; display:block; text-align:center; background:var(--blue); color:#fff; text-decoration:none; padding:9px; border-radius:6px; font-size:14px; cursor:pointer; }
+  .card a.open:hover { background:#0854a0; }
+  .ext { font-size:11px; color:var(--muted); text-align:center; margin-top:4px; }
+  .script { margin-top:22px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 20px; }
+  .script h3 { margin:0 0 8px; font-size:16px; }
+  .script ol { margin:0; padding-left:20px; font-size:14px; line-height:1.6; }
+  .script code { background:#eef1f4; padding:1px 5px; border-radius:4px; font-size:13px; }
+  .note { margin-top:14px; font-size:12px; color:var(--muted); }
+  @media (max-width: 900px) {
+    .flow { grid-template-columns:1fr; }
+    .card:not(:last-child)::after { content:"\2193"; right:50%; top:auto; bottom:-14px; transform:translate(50%, 50%); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">SAP</span>
+  <h1>TravelOrder AI</h1>
+  <span class="tag">AI-assisted sales order processing for travel bookings</span>
+</header>
+<main>
+  <section class="intro">
+    <h2>From customer request to refund in four steps</h2>
+    <p>Each step is its own SAP project. Click the steps in order to follow one travel booking through the process.</p>
+  </section>
+
+  <section class="flow">
+    <div class="card">
+      <div class="num">1</div>
+      <h3>Assistant</h3>
+      <p class="what">Checks if a booking request is complete and answers refund questions.</p>
+      <dl>
+        <dt>SAP technology</dt><dd>Joule agent + 2 Joule skills (SAP Build), local copy</dd>
+        <dt>AI</dt><dd><span class="ai">Agent calls skills for the rules</span></dd>
+      </dl>
+      <a class="open" href="/">Open Assistant</a>
+      <div class="ext">same tab</div>
+    </div>
+
+    <div class="card">
+      <div class="num">2</div>
+      <h3>Intake</h3>
+      <p class="what">AI reads the customer message and creates the sales order in S/4HANA.</p>
+      <dl>
+        <dt>SAP technology</dt><dd>CAP + Fiori elements on SAP BTP, mock S/4HANA (API_SALES_ORDER_SRV)</dd>
+        <dt>AI</dt><dd><span class="ai">Extracts dates, travellers, budget</span></dd>
+      </dl>
+      <a class="open" target="_blank" rel="noopener" href="https://e2029c81trial-dev-travelorder-ai.cfapps.us10-001.hana.ondemand.com/travelorderaiintake/index.html">Open Intake</a>
+      <div class="ext">opens in a new tab</div>
+    </div>
+
+    <div class="card">
+      <div class="num">3</div>
+      <h3>Overview</h3>
+      <p class="what">Shows upcoming bookings and which ones need attention first.</p>
+      <dl>
+        <dt>SAP technology</dt><dd>CAP + Fiori elements on SAP BTP, SAP HANA Cloud</dd>
+        <dt>AI</dt><dd><span class="ai">Summary, priority and alert</span></dd>
+      </dl>
+      <a class="open" target="_blank" rel="noopener" href="https://e2029c81trial-dev-travelorder-overview.cfapps.us10-001.hana.ondemand.com/overview/index.html">Open Overview</a>
+      <div class="ext">opens in a new tab</div>
+    </div>
+
+    <div class="card">
+      <div class="num">4</div>
+      <h3>After-Booking</h3>
+      <p class="what">Change dates, cancel, refund; big refunds need a manager.</p>
+      <dl>
+        <dt>SAP technology</dt><dd>CAP + Fiori elements on SAP BTP, roles with XSUAA</dd>
+        <dt>Rules</dt><dd>90 / 50 / 0 % refund, manager over 1,000 EUR</dd>
+      </dl>
+      <a class="open" target="_blank" rel="noopener" href="https://e2029c81trial-dev-travelorder-afterbooking.cfapps.us10-001.hana.ondemand.com/afterbooking/index.html">Open After-Booking</a>
+      <div class="ext">opens in a new tab</div>
+    </div>
+  </section>
+
+  <section class="script">
+    <h3>Demo script</h3>
+    <ol>
+      <li><b>Assistant:</b> click <code>Test 4</code> and send. The request has no return date; the skill finds it. Then click <code>Test 1</code>: 1,500 EUR, 40 days before departure gives 1,350 EUR with manager approval.</li>
+      <li><b>Intake:</b> open request <code>BRQ10008</code> (Japan, German message) and run the AI analysis. Then open <code>BRQ10004</code> (Tirol, Approved) and create the sales order in mock S/4HANA.</li>
+      <li><b>Overview:</b> open booking <code>BO-2001</code> (Oslo, unpaid, departs soon) and generate the AI insights: summary, priority and alert.</li>
+      <li><b>After-Booking:</b> open <code>AB-1001</code> (Mallorca, 1,500 EUR) and cancel it: 90 % = 1,350 EUR, same as the Assistant said. Approve the refund as manager.</li>
+    </ol>
+    <p class="note">Each app has its own database, so a booking does not move from one app to the next by itself. S/4HANA is simulated with a mock service in the SAP API format. The Assistant is a local copy of the Joule agent, because students cannot deploy it. All data is invented sample data.</p>
+  </section>
+</main>
+</body>
+</html>
