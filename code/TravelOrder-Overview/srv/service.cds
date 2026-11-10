@@ -9,7 +9,7 @@ service travelbookingsSrv {
     case paymentStatus when 'Paid' then 3 when 'Partly Paid' then 2 when 'Unpaid' then 1 else 0 end as paymentCriticality : Integer,
     case aiPriority when 'High' then 1 when 'Medium' then 2 when 'Low' then 3 else 0 end as priorityCriticality : Integer
   } actions {
-    @Common.SideEffects: { TargetProperties: ['in/aiSummary', 'in/aiPriority', 'in/aiAlert', 'in/aiGeneratedAt', 'in/priorityCriticality'] }
+    @Common.SideEffects: { TargetProperties: ['in/aiSummary', 'in/aiPriority', 'in/aiAlert', 'in/aiGeneratedAt', 'in/priorityCriticality', 'in/aiPlaces', 'in/aiHotels'] }
     action generateInsights();
 
     // Payment recording. Partial = 50 % of the total price, only while unpaid.

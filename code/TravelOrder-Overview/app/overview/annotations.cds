@@ -18,6 +18,8 @@ annotate S.TravelBookings with {
   aiPriority @title: 'AI Priority';
   aiAlert @title: 'AI Alert' @UI.MultiLineText;
   aiGeneratedAt @title: 'AI Generated At';
+  aiPlaces @title: 'Places to Visit' @UI.MultiLineText;
+  aiHotels @title: 'Hotel Suggestions (no prices)' @UI.MultiLineText;
   paymentCriticality @UI.Hidden;
   priorityCriticality @UI.Hidden;
 };
@@ -47,10 +49,12 @@ annotate S.TravelBookings with @(
   UI.FieldGroup #Payment: { Data: [ { Value: totalPrice }, { Value: currency }, { Value: amountPaid }, { Value: paymentStatus, Criticality: paymentCriticality } ] },
   UI.FieldGroup #Notes: { Data: [ { Value: customerNotes } ] },
   UI.FieldGroup #AI: { Data: [ { Value: aiPriority, Criticality: priorityCriticality }, { Value: aiSummary }, { Value: aiAlert }, { Value: aiGeneratedAt } ] },
+  UI.FieldGroup #Tips: { Data: [ { Value: aiPlaces }, { Value: aiHotels } ] },
   UI.Facets: [
     { $Type: 'UI.ReferenceFacet', ID: 'trip', Label: 'Trip Details', Target: '@UI.FieldGroup#Trip' },
     { $Type: 'UI.ReferenceFacet', ID: 'payment', Label: 'Payment', Target: '@UI.FieldGroup#Payment' },
     { $Type: 'UI.ReferenceFacet', ID: 'notes', Label: 'Customer Notes', Target: '@UI.FieldGroup#Notes' },
-    { $Type: 'UI.ReferenceFacet', ID: 'ai', Label: 'AI Insights', Target: '@UI.FieldGroup#AI' }
+    { $Type: 'UI.ReferenceFacet', ID: 'ai', Label: 'AI Insights', Target: '@UI.FieldGroup#AI' },
+    { $Type: 'UI.ReferenceFacet', ID: 'tips', Label: 'AI Travel Suggestions (please check before booking)', Target: '@UI.FieldGroup#Tips' }
   ]
 );

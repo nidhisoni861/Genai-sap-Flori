@@ -27,6 +27,9 @@ export function bookingFacts(b, today) {
     totalPrice: total,
     amountPaid: paid,
     amountOutstanding: Math.round((total - paid) * 100) / 100,
+    nights: Math.max(1, Math.round((Date.parse(b.returnDate) - Date.parse(b.departureDate)) / 86400000) || 1),
+    budgetPerTravellerPerNight: Math.round(total / Math.max(1, b.numberOfTravellers || 1)
+      / Math.max(1, Math.round((Date.parse(b.returnDate) - Date.parse(b.departureDate)) / 86400000) || 1)),
     currency: b.currency,
     customerNotes: b.customerNotes || ''
   };
@@ -39,16 +42,21 @@ Return:
 - noteCategory: the most important kind of need in customerNotes:
   health_or_accessibility (allergy, medical, wheelchair, mobility), visa (visa or passport question), other_request (any other wish, such as room type, meals, arrival time, children, group seating), none (empty notes, or notes that only describe the booking, such as a cancellation).
 - alert: one short sentence listing every action staff must take, including the outstanding payment if amountOutstanding is above 0 and the customer need if there is one. If noteCategory is not none, the alert must name the customer need, even when payment is complete. Use an empty string only if amountOutstanding is 0 and noteCategory is none.
-Use only the facts given. Do not invent facts.`;
+- places: 4 to 5 well-known sights or experiences in the destination, each as "Name: short reason" (under 12 words). Keep them reachable within the trip length: for a country and a trip of 10 nights or less, stay in one or two nearby cities.
+- hotels: 4 to 5 real, well-known hotels near those places, each as "Hotel name, area: why it fits" (under 15 words). Match the budget: budgetPerTravellerPerNight is the whole trip budget per person per night (travel included), so below 150 choose simple or mid-range 2 to 3 star hotels, 150 to 350 choose 3 to 4 star hotels, only above 350 choose luxury hotels. Never give prices or availability.
+If the destination is unclear or not a real place, return empty lists for places and hotels.
+Use only the facts given for summary, noteCategory and alert. Do not invent facts about the booking.`;
 
 const SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['summary', 'noteCategory', 'alert'],
+  required: ['summary', 'noteCategory', 'alert', 'places', 'hotels'],
   properties: {
     summary: { type: 'string' },
     noteCategory: { type: 'string', enum: ['health_or_accessibility', 'visa', 'other_request', 'none'] },
-    alert: { type: 'string' }
+    alert: { type: 'string' },
+    places: { type: 'array', items: { type: 'string' } },
+    hotels: { type: 'array', items: { type: 'string' } }
   }
 };
 
@@ -100,7 +108,13 @@ export async function generateInsights(facts) {
   }
   const category = ['health_or_accessibility', 'visa', 'other_request', 'none'].includes(out.noteCategory) ? out.noteCategory : 'other_request';
   const priority = decidePriority(facts, category);
+  // At most 5 short lines each; anything else from the model is ignored.
+  const list = v => (Array.isArray(v) ? v : [])
+    .map(s => String(s).replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 5)
+    .map(s => `• ${s.slice(0, 150)}`).join('\n') || null;
   return {
+    places: list(out.places),
+    hotels: list(out.hotels),
     summary: String(out.summary || '').trim().slice(0, 1000),
     priority,
     alert: String(out.alert || '').trim().slice(0, 500) || (category !== 'none' ? 'Check the customer notes and arrange the request.' : null)

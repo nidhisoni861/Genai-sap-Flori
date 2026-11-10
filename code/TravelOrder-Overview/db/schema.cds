@@ -19,4 +19,7 @@ entity TravelBookings {
   aiPriority: String(10);
   aiAlert: LargeString;
   aiGeneratedAt: Timestamp;
+  // AI travel suggestions for the destination (one per line); staff must check before booking.
+  aiPlaces: LargeString;
+  aiHotels: LargeString;
 }

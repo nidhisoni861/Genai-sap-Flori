@@ -17,6 +17,8 @@ export default class TravelBookingsService extends cds.ApplicationService {
           aiSummary: ai.summary,
           aiPriority: ai.priority,
           aiAlert: ai.alert,
+          aiPlaces: ai.places,
+          aiHotels: ai.hotels,
           aiGeneratedAt: new Date().toISOString()
         }).where({ ID });
       } catch (e) {
