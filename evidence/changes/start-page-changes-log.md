@@ -25,3 +25,25 @@ Decided the night before the exam: real data flow between the apps needs about 4
 - Data in the apps at test time: P2 10 booking requests and 3 sales orders in mock S/4HANA; P3 12 bookings; P4 8 bookings (AB-1001 Confirmed).
 
 Screenshots: `evidence/screenshots/start-page/01` and `02`.
+
+## End-to-end test after a full restart (10 Nov 2026, evening)
+Goal: prove that everything works after the nightly stop, using records that are not in the demo script, so the demo cases stay fresh.
+
+Restart: all six BTP apps stopped with cf stop, then ~/start-exam.sh started them. HANA was already running. The script reached "ALL DONE" after about 2.5 minutes; all three links returned 200. Note: a restart ends the browser login session; reloading the app signs in again.
+
+| Step | Action | Result |
+|---|---|---|
+| P1 Assistant | Booking check "2 travellers, 12 July 2027, no return date" | Pass: "The booking request is not complete. The problem is: return date missing or wrong (use YYYY-MM-DD). Please provide a ret" |
+| P2 Intake | AI extraction on BRQ10002 (German message) | Pass: language DE and destination Berlin extracted; AI recommends clarifying the exact dates; no invented values (dates and budget were already in the sample data); status Ready for Review |
+| P2 Intake | Approve BRQ10009 (Maldives) | Pass: status Order Created, sales order 5000004 created in mock S/4HANA (type OR, sales org 1010, PurchaseOrderByCustomer BRQ10009) |
+| P3 Overview | Generate AI insights on BO-2009 (Istanbul, unpaid, visa question) | Pass: summary and alert mention the open 890 EUR and the visa question; AI priority Medium |
+| P4 After-Booking | Cancel AB-1005 (Rome, 3,200 EUR, more than 30 days) | Pass: 90 % = 2,880 EUR, Cancellation Requested, manager needed |
+| P4 After-Booking | Approve refund AB-1005 as manager | Pass: Refunded |
+| P4 After-Booking | Cancel AB-1004 (Oslo, 4 days before departure) | Pass: 0 %, Cancelled |
+
+The OpenAI key still works on BTP after the restart (P2 and P3 AI calls succeeded).
+Demo cases still unused: P2 BRQ10008 (New) and BRQ10003 (Ready for Review), P3 BO-2001, P4 AB-1001 (Confirmed).
+
+Mistake found and fixed: the demo script said to create the sales order on BRQ10004. That request has status Approved, and the Approve action (which creates the order) is only offered for Ready for Review or Failed. The demo script now uses BRQ10003.
+
+Screenshots: evidence/screenshots/end-to-end/01 to 03.
