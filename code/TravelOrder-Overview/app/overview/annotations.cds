@@ -25,9 +25,15 @@ annotate S.TravelBookings with {
 annotate S.TravelBookings with @(
   UI.HeaderInfo: { TypeName: 'Booking', TypeNamePlural: 'Bookings', Title: { Value: bookingNumber }, Description: { Value: destination } },
   UI.SelectionFields: [ bookingStatus, paymentStatus, aiPriority, destination ],
-  UI.Identification: [ { $Type: 'UI.DataFieldForAction', Action: 'travelbookingsSrv.generateInsights', Label: 'Generate AI Insights' } ],
+  UI.Identification: [
+    { $Type: 'UI.DataFieldForAction', Action: 'travelbookingsSrv.generateInsights', Label: 'Generate AI Insights' },
+    { $Type: 'UI.DataFieldForAction', Action: 'travelbookingsSrv.recordPartialPayment', Label: 'Record Partial Payment (50 %)' },
+    { $Type: 'UI.DataFieldForAction', Action: 'travelbookingsSrv.recordFullPayment', Label: 'Record Full Payment' }
+  ],
   UI.LineItem: [
     { $Type: 'UI.DataFieldForAction', Action: 'travelbookingsSrv.generateInsights', Label: 'Generate AI Insights' },
+    { $Type: 'UI.DataFieldForAction', Action: 'travelbookingsSrv.recordPartialPayment', Label: 'Record Partial Payment (50 %)' },
+    { $Type: 'UI.DataFieldForAction', Action: 'travelbookingsSrv.recordFullPayment', Label: 'Record Full Payment' },
     { Value: bookingNumber },
     { Value: customerName },
     { Value: destination },

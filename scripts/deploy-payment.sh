@@ -1,0 +1,13 @@
+#!/bin/bash
+# Deploys only the P3 server with the payment buttons, then restores its environment variables.
+P=/home/user/projects; L=~/payment-deploy.log; A=TravelOrder-Overview-srv
+echo "start $(date +%H:%M:%S)" > $L
+[ -f ~/backup-before-payment.tgz ] || tar czf ~/backup-before-payment.tgz -C $P TravelOrder-Overview/srv TravelOrder-Overview/app/overview/annotations.cds && echo "backup ok" >> $L
+tar xzf /tmp/paypkg.tgz -C $P --exclude=deploy-payment.sh --exclude='._*' 2>/dev/null; find $P/TravelOrder-Overview -name '._*' -not -path '*/node_modules/*' -delete; echo "files copied" >> $L
+cd $P/TravelOrder-Overview && rm -rf mta_archives && mbt build -p=cf > ~/mbt-payment.log 2>&1 && cf deploy mta_archives/*.mtar -m $A -f > ~/deploy-payment.log 2>&1 && echo "deployed $(date +%H:%M:%S)" >> $L || { echo "FAILED $(date +%H:%M:%S)" >> $L; exit 1; }
+cf set-env $A OPENAI_API_KEY "$(grep -E '^OPENAI_API_KEY=' $P/TravelOrder-Overview/.env | head -1 | cut -d= -f2-)" > /dev/null
+cf set-env $A OPENAI_MODEL gpt-4o-mini > /dev/null
+cf set-env $A FLOW_KEY "$(cat ~/.flow-key)" > /dev/null
+cf restart $A > /dev/null 2>&1 && echo "restarted" >> $L
+echo "env names: $(cf env $A | sed -n '/User-Provided:/,/^$/p' | grep -v User-Provided | cut -d: -f1 | tr '\n' ' ')" >> $L
+echo "ALL DONE $(date +%H:%M:%S)" >> $L

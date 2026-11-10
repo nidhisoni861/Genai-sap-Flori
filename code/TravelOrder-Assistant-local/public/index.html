@@ -112,7 +112,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Sending failed');
         btn.textContent = 'Sent';
-        status.textContent = `Created in TravelOrder Intake as ${data.requestNumber}. Open Intake and run the AI extraction.`;
+        status.textContent = `Created in TravelOrder Intake as ${data.requestNumber}. Open Intake, open the request and click "Read with AI".`;
         email.disabled = true;
       } catch (err) {
         btn.disabled = false;

@@ -11,5 +11,15 @@ service travelbookingsSrv {
   } actions {
     @Common.SideEffects: { TargetProperties: ['in/aiSummary', 'in/aiPriority', 'in/aiAlert', 'in/aiGeneratedAt', 'in/priorityCriticality'] }
     action generateInsights();
+
+    // Payment recording. Partial = 50 % of the total price, only while unpaid.
+    @Core.OperationAvailable: { $edmJson: { $And: [ { $Eq: [ { $Path: 'in/paymentStatus' }, 'Unpaid' ] }, { $Ne: [ { $Path: 'in/bookingStatus' }, 'Cancelled' ] } ] } }
+    @Common.SideEffects: { TargetProperties: ['in/amountPaid', 'in/paymentStatus', 'in/paymentCriticality'] }
+    action recordPartialPayment();
+
+    // Full = amount paid becomes the total price (also completes a partial payment).
+    @Core.OperationAvailable: { $edmJson: { $And: [ { $Ne: [ { $Path: 'in/paymentStatus' }, 'Paid' ] }, { $Ne: [ { $Path: 'in/bookingStatus' }, 'Cancelled' ] } ] } }
+    @Common.SideEffects: { TargetProperties: ['in/amountPaid', 'in/paymentStatus', 'in/paymentCriticality'] }
+    action recordFullPayment();
   };
 }

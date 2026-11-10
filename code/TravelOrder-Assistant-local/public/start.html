@@ -106,7 +106,7 @@
     <ol>
       <li><b>Assistant:</b> type a trip, for example <code>3 travellers to Rome, departure 10 September 2027, return 17 September 2027, budget 3,000 EUR</code>. The skill checks it. When it is complete, enter the customer email and click <b>Send to Intake</b>. (Tip: first try <code>Test 4</code> to show that missing data is found.)</li>
       <li><b>Intake:</b> press Go, open the new request (status New), click <b>Read with AI</b> (fields are filled, Ready for Review), then <b>Approve</b>: sales order created in mock S/4HANA, and the trip is sent on as <code>TO-&lt;sales order&gt;</code>.</li>
-      <li><b>Overview:</b> press Go: the same trip <code>TO-…</code> is there. Select it and click <b>Generate AI Insights</b>.</li>
+      <li><b>Overview:</b> press Go: the same trip <code>TO-…</code> is there (Unpaid). Open it and click <b>Record Partial Payment (50 %)</b> (Partly Paid), then <b>Record Full Payment</b> (Paid). Click <b>Generate AI Insights</b>: a paid trip gets a lower priority.</li>
       <li><b>After-Booking:</b> press Go and open <code>TO-…</code>: same customer, dates and price. Cancel it (refund by the 90 / 50 / 0 % rules) and approve the refund as manager.</li>
     </ol>
     <p class="note">The trip moves from app to app through SAP CAP actions on SAP BTP, protected by a shared key. The price in Overview and After-Booking is the customer's budget. S/4HANA is simulated with a mock service in the SAP API format. The Assistant is a local copy of the Joule agent, because students cannot deploy it. All data is invented sample data.</p>
