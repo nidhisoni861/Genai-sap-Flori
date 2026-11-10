@@ -11,7 +11,7 @@ S/4HANA is simulated with a mock service in the SAP API_SALES_ORDER_SRV format (
 | 3 | Bookings Overview with AI summary and priority | `code/TravelOrder-Overview/` | CAP + Fiori elements, SAP BTP |
 | 4 | After-Booking: change dates, cancel, refund, manager approval | `code/TravelOrder-AfterBooking/` | CAP + Fiori elements, SAP BTP |
 
-Start page linking all four projects (run locally):
+Start page linking all four projects (run locally). One trip typed in the Assistant flows through Intake, Overview and After-Booking (see evidence/changes/connected-flow-changes-log.md):
 `cd code/TravelOrder-Assistant-local && npm start`, then open http://localhost:4010/start
 
 Live apps (SAP login required):
