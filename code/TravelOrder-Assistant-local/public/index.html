@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TravelOrder Assistant</title>
+<style>
+  :root { --blue:#0a6ed1; --shell:#354a5f; --bg:#f5f6f7; --card:#fff; --text:#32363a; --muted:#6a6d70; --line:#d9d9d9; --skill:#efe6fb; --skillText:#5d36a3; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"72","Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--shell); color:#fff; padding:12px 20px; display:flex; align-items:center; gap:12px; }
+  header .logo { background:#fff; color:var(--blue); font-weight:700; padding:2px 8px; border-radius:4px; }
+  header h1 { font-size:18px; margin:0; font-weight:600; }
+  header .tag { margin-left:auto; font-size:12px; opacity:.85; }
+  main { max-width:920px; margin:0 auto; padding:16px; display:flex; flex-direction:column; height:calc(100vh - 52px); }
+  .note { background:#e5f0fa; border-left:4px solid var(--blue); padding:8px 12px; font-size:13px; margin-bottom:12px; border-radius:4px; }
+  .examples { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .examples button { border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:16px; padding:5px 12px; font-size:12px; cursor:pointer; }
+  .examples button:hover { background:#e5f0fa; }
+  #chat { flex:1; overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; }
+  .msg { margin:10px 0; max-width:85%; padding:10px 14px; border-radius:10px; white-space:pre-wrap; line-height:1.45; font-size:14px; }
+  .user { margin-left:auto; background:var(--blue); color:#fff; border-bottom-right-radius:2px; }
+  .bot { background:#eef1f4; border-bottom-left-radius:2px; }
+  .skills { margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+  .skill { background:var(--skill); color:var(--skillText); font-size:12px; padding:4px 8px; border-radius:6px; font-family:Menlo,Consolas,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .error { background:#ffebeb; color:#bb0000; }
+  form { display:flex; gap:8px; margin-top:12px; }
+  input { flex:1; padding:10px 12px; border:1px solid #89919a; border-radius:6px; font-size:14px; }
+  form button { background:var(--blue); color:#fff; border:none; padding:0 20px; border-radius:6px; font-size:14px; cursor:pointer; }
+  form button:disabled { opacity:.5; cursor:default; }
+  .clear { background:none; border:none; color:var(--blue); cursor:pointer; font-size:12px; align-self:flex-end; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">SAP</span>
+  <h1>TravelOrder Assistant</h1>
+  <span class="tag">Local copy of the Joule agent &middot; Project 1</span>
+</header>
+<main>
+  <div class="note">Same instructions and skills as the Joule agent in SAP Build (released 1.0.0). It runs locally because students cannot deploy to a shared environment. Suggestions only: a person always decides.</div>
+  <div class="examples" id="examples"></div>
+  <button class="clear" id="clear">Clear chat</button>
+  <div id="chat"></div>
+  <form id="form">
+    <input id="input" placeholder="Ask about a refund or check a booking request..." autocomplete="off">
+    <button id="send">Send</button>
+  </form>
+</main>
+<script>
+  const examples = [
+    'A customer cancels a 1,500 EUR trip 40 days before departure. How much refund?',
+    'Trip 800 EUR, cancelled 20 days before departure.',
+    'Trip 600 EUR, cancelled 5 days before departure.',
+    'Request: 2 travellers, departure 12 July 2027, no return date, budget 3,000 EUR.',
+    'Request: departure 20 July 2027, return 10 July 2027, 2 travellers, budget 2,000 EUR.',
+    'Trip 1,100 EUR, cancelled 40 days before departure.',
+  ];
+  const history = [];
+  const chat = document.getElementById('chat');
+  const input = document.getElementById('input');
+  const send = document.getElementById('send');
+
+  const ex = document.getElementById('examples');
+  examples.forEach((q, i) => {
+    const b = document.createElement('button');
+    b.textContent = `Test ${i + 1}`;
+    b.title = q;
+    b.onclick = () => { input.value = q; input.focus(); };
+    ex.appendChild(b);
+  });
+
+  function add(role, text, toolCalls) {
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    div.textContent = text;
+    if (toolCalls && toolCalls.length) {
+      const box = document.createElement('div');
+      box.className = 'skills';
+      toolCalls.forEach((t) => {
+        const s = document.createElement('div');
+        s.className = 'skill';
+        s.textContent = `Skill called: ${t.name}\n  input: ${JSON.stringify(t.input)}\n  output: ${JSON.stringify(t.output)}`;
+        box.appendChild(s);
+      });
+      div.appendChild(box);
+    }
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  document.getElementById('clear').onclick = () => { history.length = 0; chat.innerHTML = ''; };
+
+  document.getElementById('form').onsubmit = async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    add('user', text);
+    history.push({ role: 'user', content: text });
+    send.disabled = true;
+    send.textContent = 'Thinking...';
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      add('bot', data.reply, data.toolCalls);
+      history.push({ role: 'assistant', content: data.reply });
+    } catch (err) {
+      add('bot error', `Error: ${err.message}`);
+      history.pop();
+    } finally {
+      send.disabled = false;
+      send.textContent = 'Send';
+      input.focus();
+    }
+  };
+</script>
+</body>
+</html>

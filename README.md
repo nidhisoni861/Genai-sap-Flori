@@ -6,7 +6,7 @@ S/4HANA is simulated with a mock service in the SAP API_SALES_ORDER_SRV format (
 
 | # | Project | Folder | Platform |
 |---|---|---|---|
-| 1 | TravelOrder Assistant (Joule agent + 2 skills) | `project-1-joule-agent/` (design; built in SAP Build Joule Studio) | SAP Build, released 1.0.0, not deployed (students have no shared environment) |
+| 1 | TravelOrder Assistant (Joule agent + 2 skills) | `project-1-joule-agent/` (design; built in SAP Build Joule Studio) and `code/TravelOrder-Assistant-local/` (local copy to run it: `npm start`) | SAP Build, released 1.0.0, not deployed (students have no shared environment) |
 | 2 | TravelOrder Intake: AI reads a booking request and creates a sales order in mock S/4HANA | `code/TravelOrder-AI/` | CAP + Fiori elements, SAP BTP Cloud Foundry, HANA Cloud |
 | 3 | Bookings Overview with AI summary and priority | `code/TravelOrder-Overview/` | CAP + Fiori elements, SAP BTP |
 | 4 | After-Booking: change dates, cancel, refund, manager approval | `code/TravelOrder-AfterBooking/` | CAP + Fiori elements, SAP BTP |

@@ -1,0 +1,14 @@
+{
+  "name": "travelorder-assistant-local",
+  "version": "1.0.0",
+  "description": "Local copy of the Joule agent TravelOrder Assistant (Project 1)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}

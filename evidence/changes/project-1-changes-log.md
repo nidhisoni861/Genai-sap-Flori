@@ -79,3 +79,23 @@ Mistakes and fixes:
 - Result: not deployed. A shared environment must be created by a tenant administrator (SAP Build Control Tower > Environments). The student account cannot create it. Same reason why Test showed an empty environment list (Step 22).
 - Not done: live test of the agent (planned tests 1 to 6).
 - Update (10 Nov 2026): the student asked the professor. Students have no access to create a shared environment or deploy in the university tenant. Project 1 ends at "built and released 1.0.0, not deployed"; the reason is shown in screenshot 15.
+
+## Local copy of the agent (10 Nov 2026)
+Reason: the Joule agent cannot be deployed or tested in the university tenant (no shared environment, confirmed by the professor). To show it working, a local copy was built with Claude Code: `code/TravelOrder-Assistant-local/`.
+
+Same as Joule: agent expertise and instructions, skill rules of "Calculate Refund" and "Check Booking Request" (same thresholds and same patterns), Calculator tool, all tool inputs as text.
+Different: the model is gpt-4o-mini through the OpenAI API (as in Projects 2 and 3), not Joule. Runs at http://localhost:4010 with a chat page that shows each skill call with input and output.
+
+Tests:
+- Skill rules without AI: 7 of 7 passed (refund bands incl. 30/29/14/13 days, calculator, booking checks, travellers and budget rules). The first run found a bug: empty days counted as 0 days (0 percent). Fixed: empty days give no rule, like the Joule Default branch.
+- Planned agent tests 1 to 6 through the chat: all passed (screenshots 16 to 18): 1,350 EUR with manager; 400 EUR; no refund; return date missing; return date must be after departure; 990 EUR without manager.
+- Extra: missing days, the agent asks instead of guessing; complete request gives "complete and ready for review" (screenshot 19).
+
+Problems found and fixed during testing:
+- The model sometimes misread the five true/false values (once it called a request with return date before departure "complete", once it flagged a correct request). Fix: the local copy turns the true/false values into a plain "problems" list in code before the model sees them (the problem list from the original design). After the fix: 11 of 11 runs correct.
+- In a follow-up question in the same chat the model answered from memory without calling the skill. Fix: questions that contain numbers must call a skill first (tool_choice "required").
+- With no days given, the model invented "0 days" and answered "no refund". Fix: the skill input says "empty if not given, never guess", and the agent asks for the missing days. Retested 3 of 3.
+- Long skill output overflowed the chat box; wrapped with CSS.
+
+Known limit: when the user gives dates instead of days, the model counts the days itself and was once off by one day (48 instead of 47). The refund band was still right; near the 14 or 30 day limit this could give a wrong band, so a person must check (the agent only gives suggestions).
+The OpenAI key is in a local .env file only (not in Git).
