@@ -1,0 +1,13 @@
+ID,bookingNumber,customerName,customerEmail,destination,departureDate,returnDate,numberOfTravellers,totalPrice,currency,amountPaid,paymentStatus,bookingStatus,customerNotes
+ebae2e7a-23ea-5798-bba5-5ab0e7c1b54b,BO-2001,Sample Customer 01,bo-2001@example.com,Oslo,2026-11-20,2026-11-25,2,1400,EUR,0,Unpaid,Confirmed,Customer asks if a visa is needed.
+344d4c43-8f86-55bb-a602-e7e7cde5cf36,BO-2002,Sample Customer 02,bo-2002@example.com,Lisbon,2026-11-27,2026-12-02,1,650,EUR,300,Partly Paid,Confirmed,"Vegetarian meals, please."
+ea73f9a6-5a48-52d7-ab17-7e3d822f6107,BO-2003,Sample Customer 03,bo-2003@example.com,Rome,2026-12-05,2026-12-12,4,3200,EUR,3200,Paid,Confirmed,Family with two small children.
+6a566850-b244-518a-a8df-fe8e2b928b87,BO-2004,Sample Customer 04,bo-2004@example.com,Vienna,2026-12-12,2026-12-16,2,1800,EUR,900,Partly Paid,Changed,Needs wheelchair access at the hotel and the airport.
+02ccfd45-1b90-5d61-8425-78cc2224c6e1,BO-2005,Sample Customer 05,bo-2005@example.com,Prague,2026-12-20,2026-12-24,2,950,EUR,950,Paid,Confirmed,
+797d00c5-8eb0-526d-98b9-8607124ababb,BO-2006,Sample Customer 06,bo-2006@example.com,Crete,2027-01-15,2027-01-22,3,2100,EUR,0,Unpaid,Confirmed,"Severe nut allergy, the hotel must be informed."
+11cdb4a6-b3c2-5d15-933b-b1de62e4f779,BO-2007,Sample Customer 07,bo-2007@example.com,Paris,2027-02-03,2027-02-07,2,1250,EUR,1250,Paid,Changed,"Anniversary trip, asks for a quiet room."
+9dd83343-e53c-5dac-9e3e-7e9979c55332,BO-2008,Sample Customer 08,bo-2008@example.com,Mallorca,2027-03-10,2027-03-17,2,1500,EUR,500,Partly Paid,Confirmed,
+d92f07c2-8d16-5387-a901-c330afa8f5aa,BO-2009,Sample Customer 09,bo-2009@example.com,Istanbul,2027-04-02,2027-04-09,1,890,EUR,0,Unpaid,Confirmed,Visa question: travelling on a non-EU passport.
+2da5731c-ec61-57b8-9f5a-4cedbaced56f,BO-2010,Sample Customer 10,bo-2010@example.com,Madeira,2027-05-05,2027-05-12,2,1950,EUR,1950,Paid,Confirmed,"Late arrival, around midnight."
+6581e1a8-bb63-5b67-9aaa-99c96cf44fa3,BO-2011,Sample Customer 11,bo-2011@example.com,Budapest,2027-06-01,2027-06-05,2,780,EUR,780,Paid,Cancelled,Cancelled by the customer.
+b5ab982a-b9e0-5146-bc14-bc4993cd0793,BO-2012,Sample Customer 12,bo-2012@example.com,Athens,2027-07-14,2027-07-21,5,4100,EUR,2000,Partly Paid,Confirmed,Group needs rooms next to each other.

@@ -1,0 +1,1935 @@
+2026-11-09T13:17:54.884Z [info] Project generation uses model: "gpt-4.1-mini", version: "latest"
+2026-11-09T13:17:54.885Z [info] 1/8: Generate CAP model using LLM
+2026-11-09T13:17:58.195Z [info] 
+==========LLM call for step "extractAppSkeleton":==========
+You help the user building a Fiori Elements application described in the user input.
+
+A Fiori Elements application typically starts with a ListReport page showing the data of the base entity of the application in a table.
+Details of a specific table row are shown in the ObjectPage. This first ObjectPage is therefore based on the base entity of the application.
+An ObjectPage can contain one or more table sections based on to-many associations of its entity type.
+The details of a table section row can be shown in an another ObjectPage based on the associations target entity.
+
+Your task is to find the entities (with their to-many associations) as well as the ObjectPages (with the to-many associations they use in table sections) described in the user input below.
+
+You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
+
+"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
+
+For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
+Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
+
+Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
+```json
+{
+  "type": "object",
+  "properties": {
+    "entities": {
+      "type": "array",
+      "description": "Define all entities and their to-many associations; entity properties will be determined later",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "UpperCamelCase, no spaces, plural, e.g. 'Orders'"
+          },
+          "label": {
+            "type": "string",
+            "description": "max two words, singular"
+          },
+          "associations": {
+            "type": "array",
+            "description": "Define to-many associations between entities",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string",
+                  "description": "Points to existing entity, value is entities.name"
+                },
+                "nameForReverseAssociation": {
+                  "type": "string",
+                  "description": "Name of the reverse to-one association in the target entity; required if target entity is same as source entity"
+                },
+                "multiplicity": {
+                  "type": "string",
+                  "enum": [
+                    "many",
+                    "one"
+                  ],
+                  "description": "Cardinality of the association"
+                }
+              },
+              "required": [
+                "name",
+                "target",
+                "multiplicity"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "labelPlural": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "associations",
+          "labelPlural"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "baseEntity": {
+      "type": "string",
+      "description": "base entity of ListReport page (if present) and first ObjectPage"
+    },
+    "noListReportPage": {
+      "type": "boolean",
+      "description": "true: no ListReport page will generated, e.g. for applications which start with an (input enabled) Object Page to enter data"
+    },
+    "objectPages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entityType": {
+            "type": "string",
+            "description": "Entity that the ObjectPage is based on, the first ObjectPage is always based on base entity. There can at most be a single ObjectPage per entityType"
+          },
+          "tableSectionsAssociations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "to-many associations of page entity for table sections shown in the ObjectPage"
+          }
+        },
+        "required": [
+          "entityType"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "namespace": {
+      "type": "string",
+      "description": "lowerCamelCase, no spaces allowed"
+    },
+    "applicationName": {
+      "type": "string",
+      "description": "lowerCamelCase, no spaces allowed"
+    },
+    "userInputKind": {
+      "enum": [
+        "UserInterfaceFirst",
+        "DataModelFirst"
+      ],
+      "description": "use 'UserInterfaceFirst' if User input describes the app based on the user interface, i.e. how List Report and Object Pages should look like; use 'DataModelFirst' if User input describes the app based on its data model, i.e. its entities, their elements and associations"
+    }
+  },
+  "required": [
+    "entities",
+    "baseEntity",
+    "objectPages",
+    "namespace",
+    "applicationName",
+    "userInputKind"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output ONLY the json contents and try to be as accurate as comprehensive as possible.
+
+<UserInput>
+Build an SAP CAP application with an SAP Fiori elements UI called "TravelOrder AI Intake".
+
+Business purpose:
+Travel agency staff receive booking requests from customers by email. The application helps staff review each request, correct it, and approve it before it becomes a sales order in SAP S/4HANA.
+
+Entity: BookingRequest
+- requestNumber
+- receivedAt
+- senderEmail
+- subject
+- originalMessage (long text)
+- language
+- customerNumber
+- tripProductCode
+- destination
+- departureDate
+- returnDate
+- numberOfTravellers
+- budget and currency
+- missingInformation (long text)
+- aiRecommendation (long text)
+- aiConfidence (decimal, 0 to 100)
+- reviewerComment (long text)
+- status: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+- salesOrderNumber
+- errorMessage (long text)
+
+Entity: AuditEntry, linked to BookingRequest
+- timestamp
+- performedBy
+- action
+- fieldName
+- aiValue
+- finalValue
+
+User interface:
+- List page with filters for status, destination, departure date and received date.
+- Object page showing the original message, extracted booking details, AI recommendation, review result and audit history.
+- Colour the status field by its state.
+
+Actions on BookingRequest:
+- Approve: only when status is Ready for Review. Sets status to Approved.
+- Reject: requires a reviewer comment. Sets status to Rejected.
+- Request Information: sets status to Needs Information.
+
+Validation:
+- Return date must be after departure date.
+- Number of travellers must be at least 1.
+- Budget must not be negative.
+
+Include realistic sample data for 10 booking requests using invented customers and example.com email addresses, covering every status.
+Do not include real personal data.
+</UserInput>
+
+----------Response:----------
+```json
+{
+  "entities": [
+    {
+      "name": "BookingRequests",
+      "label": "Booking Request",
+      "labelPlural": "Booking Requests",
+      "associations": [
+        {
+          "name": "AuditEntries",
+          "target": "AuditEntries",
+          "multiplicity": "many"
+        }
+      ]
+    },
+    {
+      "name": "AuditEntries",
+      "label": "Audit Entry",
+      "labelPlural": "Audit Entries",
+      "associations": []
+    }
+  ],
+  "baseEntity": "BookingRequests",
+  "noListReportPage": false,
+  "objectPages": [
+    {
+      "entityType": "BookingRequests",
+      "tableSectionsAssociations": [
+        "AuditEntries"
+      ]
+    },
+    {
+      "entityType": "AuditEntries",
+      "tableSectionsAssociations": []
+    }
+  ],
+  "namespace": "travelorderai",
+  "applicationName": "travelOrderAiIntake",
+  "userInputKind": "UserInterfaceFirst"
+}
+```
+2026-11-09T13:17:58.198Z [info] Step "switchBasedOnAppSkeleton": case 0 blocked! Evaluation details:
+ - JSONPath "$.model.applications[0].pages[0]" : [{"type":"ListReport","entityType":"BookingRequests"}]
+2026-11-09T13:17:58.198Z [info] Step "switchBasedOnAppSkeleton": case 1 blocked! Evaluation details:
+ - JSONPath "$.model.applications[0].pages[0].type" : ["ListReport"]
+2026-11-09T13:17:58.198Z [info] Step "switchBasedOnAppSkeleton": case 2 passed! Evaluation details:
+ - JSONPath "$.userInput.imageCount" : [0]
+2026-11-09T13:17:58.198Z [info] Step "runDataModelFirst": workflow "givenSkeletonExtractDataModelFirst" started
+"
+2026-11-09T13:18:18.489Z [info] 
+==========LLM call for step "extractEntitiesProperties":==========
+You help the user refining the DataModel for a Fiori Elements application described in the user input.
+
+The DataModel consists of the following entities and associations:
+- entity "BookingRequests" (with to-many associations to "AuditEntries")
+- entity "AuditEntries" (with to-one association to "BookingRequests")
+
+Your task is to find the properties for each entity.
+
+You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
+
+"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
+
+For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
+Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
+
+Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
+```json
+{
+  "type": "object",
+  "properties": {
+    "elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entityName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "camelCase for CAP and strict PascalCase for RAP, no spaces"
+          },
+          "type": {
+            "type": "string",
+            "description": "Allowed values: String(50), Boolean, Integer, Decimal, Double, Date, Time, DateTime, Timestamp; String length can vary - i.e. String(20)"
+          },
+          "key": {
+            "type": "boolean",
+            "description": "max. one optional key per entity, only if this element is a semantic key and can uniquely identify the instance"
+          },
+          "isAmount": {
+            "type": "boolean",
+            "description": "true if element has semantic type amount or price"
+          },
+          "isQuantity": {
+            "type": "boolean",
+            "description": "Set to true only if the element represents a measurable quantity that requires or can have a unit of measure (e.g., weight, length, duration). Do not use for simple integer counts"
+          },
+          "essentialElement": {
+            "type": "boolean",
+            "description": "'true' only if element is marked as essential'"
+          },
+          "additionalInfo": {
+            "type": "string",
+            "description": "All additional information from user input, e.g. user description, example values; also consider referenced parts in the user input"
+          }
+        },
+        "required": [
+          "entityName",
+          "name",
+          "type",
+          "additionalInfo"
+        ],
+        "additionalProperties": false
+      },
+      "description": "At least 5 realistic elements (unless explicitly specified)"
+    }
+  },
+  "required": [
+    "elements"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output ONLY the json contents and try to be as accurate as comprehensive as possible.
+
+<UserInput>
+Build an SAP CAP application with an SAP Fiori elements UI called "TravelOrder AI Intake".
+
+Business purpose:
+Travel agency staff receive booking requests from customers by email. The application helps staff review each request, correct it, and approve it before it becomes a sales order in SAP S/4HANA.
+
+Entity: BookingRequest
+- requestNumber
+- receivedAt
+- senderEmail
+- subject
+- originalMessage (long text)
+- language
+- customerNumber
+- tripProductCode
+- destination
+- departureDate
+- returnDate
+- numberOfTravellers
+- budget and currency
+- missingInformation (long text)
+- aiRecommendation (long text)
+- aiConfidence (decimal, 0 to 100)
+- reviewerComment (long text)
+- status: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+- salesOrderNumber
+- errorMessage (long text)
+
+Entity: AuditEntry, linked to BookingRequest
+- timestamp
+- performedBy
+- action
+- fieldName
+- aiValue
+- finalValue
+
+User interface:
+- List page with filters for status, destination, departure date and received date.
+- Object page showing the original message, extracted booking details, AI recommendation, review result and audit history.
+- Colour the status field by its state.
+
+Actions on BookingRequest:
+- Approve: only when status is Ready for Review. Sets status to Approved.
+- Reject: requires a reviewer comment. Sets status to Rejected.
+- Request Information: sets status to Needs Information.
+
+Validation:
+- Return date must be after departure date.
+- Number of travellers must be at least 1.
+- Budget must not be negative.
+
+Include realistic sample data for 10 booking requests using invented customers and example.com email addresses, covering every status.
+Do not include real personal data.
+</UserInput>
+
+----------Response:----------
+```json
+{
+  "elements": [
+    {
+      "entityName": "BookingRequests",
+      "name": "requestNumber",
+      "type": "String(50)",
+      "key": true,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Unique identifier for each booking request, semantic key"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "receivedAt",
+      "type": "DateTime",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Timestamp when the booking request was received"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "senderEmail",
+      "type": "String(100)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Email address of the customer who sent the booking request"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "subject",
+      "type": "String(200)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Subject line of the received email"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "originalMessage",
+      "type": "String(4000)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Full original email message text (long text)"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "language",
+      "type": "String(10)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Language code of the booking request (e.g. EN, DE)"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "customerNumber",
+      "type": "String(20)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Customer identifier in the system"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "tripProductCode",
+      "type": "String(30)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Code of the trip product requested"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "destination",
+      "type": "String(100)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Destination of the trip"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "departureDate",
+      "type": "Date",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Planned departure date"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "returnDate",
+      "type": "Date",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Planned return date, must be after departureDate"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "numberOfTravellers",
+      "type": "Integer",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": true,
+      "essentialElement": true,
+      "additionalInfo": "Number of travellers, minimum 1"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "budget",
+      "type": "Decimal",
+      "key": false,
+      "isAmount": true,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Budget amount for the trip, must not be negative"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "currency",
+      "type": "String(3)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Currency code for the budget (ISO 4217)"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "missingInformation",
+      "type": "String(2000)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Long text describing any missing information in the request"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "aiRecommendation",
+      "type": "String(2000)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "AI generated recommendation text"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "aiConfidence",
+      "type": "Decimal",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "AI confidence score from 0 to 100"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "reviewerComment",
+      "type": "String(2000)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Reviewer comments, required for rejection"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "status",
+      "type": "String(30)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Status of the booking request: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "salesOrderNumber",
+      "type": "String(50)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Sales order number created in SAP S/4HANA after approval"
+    },
+    {
+      "entityName": "BookingRequests",
+      "name": "errorMessage",
+      "type": "String(2000)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Error message if processing failed"
+    },
+    {
+      "entityName": "AuditEntries",
+      "name": "auditEntryId",
+      "type": "String(50)",
+      "key": true,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Unique identifier for audit entry"
+    },
+    {
+      "entityName": "AuditEntries",
+      "name": "timestamp",
+      "type": "DateTime",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Timestamp when the audit action was performed"
+    },
+    {
+      "entityName": "AuditEntries",
+      "name": "performedBy",
+      "type": "String(100)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "User or system who performed the action"
+    },
+    {
+      "entityName": "AuditEntries",
+      "name": "action",
+      "type": "String(50)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": true,
+      "additionalInfo": "Action performed (e.g. Approve, Reject, Request Information, Edit)"
+    },
+    {
+      "entityName": "AuditEntries",
+      "name": "fieldName",
+      "type": "String(50)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Name of the field changed or affected"
+    },
+    {
+      "entityName": "AuditEntries",
+      "name": "aiValue",
+      "type": "String(2000)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Value suggested by AI before review"
+    },
+    {
+      "entityName": "AuditEntries",
+      "name": "finalValue",
+      "type": "String(2000)",
+      "key": false,
+      "isAmount": false,
+      "isQuantity": false,
+      "essentialElement": false,
+      "additionalInfo": "Final value after review or change"
+    }
+  ]
+}
+```
+2026-11-09T13:18:31.703Z [info] 
+==========LLM call for step "extractPropertyDetails":==========
+Here is a list of property names, each with the property description that was extracted from previous user input:
+
+BookingRequests_requestNumber: Unique identifier for each booking request, semantic key
+BookingRequests_receivedAt: Timestamp when the booking request was received
+BookingRequests_senderEmail: Email address of the customer who sent the booking request
+BookingRequests_subject: Subject line of the received email
+BookingRequests_originalMessage: Full original email message text (long text)
+BookingRequests_language: Language code of the booking request (e.g. EN, DE)
+BookingRequests_customerNumber: Customer identifier in the system
+BookingRequests_tripProductCode: Code of the trip product requested
+BookingRequests_destination: Destination of the trip
+BookingRequests_departureDate: Planned departure date
+BookingRequests_returnDate: Planned return date, must be after departureDate
+BookingRequests_numberOfTravellers: Number of travellers, minimum 1
+BookingRequests_budget: Budget amount for the trip, must not be negative
+BookingRequests_currency: Currency code for the budget (ISO 4217)
+BookingRequests_missingInformation: Long text describing any missing information in the request
+BookingRequests_aiRecommendation: AI generated recommendation text
+BookingRequests_aiConfidence: AI confidence score from 0 to 100
+BookingRequests_reviewerComment: Reviewer comments, required for rejection
+BookingRequests_status: Status of the booking request: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+BookingRequests_salesOrderNumber: Sales order number created in SAP S/4HANA after approval
+BookingRequests_errorMessage: Error message if processing failed
+AuditEntries_auditEntryId: Unique identifier for audit entry
+AuditEntries_timestamp: Timestamp when the audit action was performed
+AuditEntries_performedBy: User or system who performed the action
+AuditEntries_action: Action performed (e.g. Approve, Reject, Request Information, Edit)
+AuditEntries_fieldName: Name of the field changed or affected
+AuditEntries_aiValue: Value suggested by AI before review
+AuditEntries_finalValue: Final value after review or change
+
+For each property analyze the description with respect to what property values can be expected.
+
+You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
+
+"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
+
+For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
+Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
+
+Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
+```json
+{
+  "type": "object",
+  "properties": {
+    "properties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "camelCase for CAP and strict PascalCase for RAP, no spaces"
+          },
+          "hasFixedValuesList": {
+            "type": "boolean",
+            "description": "Only limited list of values expected, e.g. property is representing e.g. a type, status, category, unit, organization"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specific property values mentioned as part of the description. Those could be possible values or example values. Don't make up or invent any values"
+          },
+          "isAmount": {
+            "type": "boolean",
+            "description": "true if element has semantic type amount or price"
+          },
+          "isQuantity": {
+            "type": "boolean",
+            "description": "Set to true only if the element represents a measurable quantity that requires or can have a unit of measure (e.g., weight, length, duration). Do not use for simple integer counts"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "properties"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output ONLY the json contents and try to be as accurate as comprehensive as possible.
+
+----------Response:----------
+```json
+{
+  "properties": [
+    {
+      "name": "BookingRequests_requestNumber",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_receivedAt",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_senderEmail",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_subject",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_originalMessage",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_language",
+      "hasFixedValuesList": true,
+      "values": ["EN", "DE"],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_customerNumber",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_tripProductCode",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_destination",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_departureDate",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_returnDate",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_numberOfTravellers",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_budget",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": true,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_currency",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_missingInformation",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_aiRecommendation",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_aiConfidence",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_reviewerComment",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_status",
+      "hasFixedValuesList": true,
+      "values": [
+        "New",
+        "Needs Information",
+        "Ready for Review",
+        "Approved",
+        "Rejected",
+        "Order Created",
+        "Failed"
+      ],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_salesOrderNumber",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "BookingRequests_errorMessage",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "AuditEntries_auditEntryId",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "AuditEntries_timestamp",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "AuditEntries_performedBy",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "AuditEntries_action",
+      "hasFixedValuesList": true,
+      "values": [
+        "Approve",
+        "Reject",
+        "Request Information",
+        "Edit"
+      ],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "AuditEntries_fieldName",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "AuditEntries_aiValue",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    },
+    {
+      "name": "AuditEntries_finalValue",
+      "hasFixedValuesList": false,
+      "values": [],
+      "isAmount": false,
+      "isQuantity": false
+    }
+  ]
+}
+```
+2026-11-09T13:18:31.704Z [info] Step "switchSimpleOrComplexApp": case 0 blocked! Evaluation details:
+ - JSONPath "$.model.applications[0].pages[2]" : [{"type":"ObjectPage","entityType":"AuditEntries","objectPageContent":{"tableSectionAssociations":[]}}]
+ - JSONPath "$.userInput.lineCount" : [53]
+2026-11-09T13:18:31.704Z [info] Step "switchSimpleOrComplexApp": no condition met - running default steps
+2026-11-09T13:18:31.704Z [info] Step "runFlowForComplexApp": workflow "givenSkeletonExtractComplexApp" started
+"
+2026-11-09T13:18:38.830Z [info] 
+==========LLM call for classifier:==========
+The user input below describes a Fiori Elements application with a ListReport page and multiple ObjectPages.
+ListReport page shows the data of the specific business object as a list or table. ObjectPage shows details of a specific business object instance.
+Your task is to classify the lines based on the same business object representation to the following categories, one line can refer only to a single category:
+ - LIST_REPORT_BOOKINGREQUESTS: line describes the ListReport page for "BookingRequests"
+ - OBJECT_PAGE_BOOKINGREQUESTS: line describes the ObjectPage for "BookingRequests" with a table of "AuditEntries"
+ - OBJECT_PAGE_AUDITENTRIES: line describes the ObjectPage for "AuditEntries"
+ - NONE: line is not describing any ListReport page or ObjectPage
+
+Return your findings as csv file with columns "lineContent" and "category"!
+
+<UserInput>
+Build an SAP CAP application with an SAP Fiori elements UI called "TravelOrder AI Intake".
+
+Business purpose:
+Travel agency staff receive booking requests from customers by email.
+The application helps staff review each request, correct it, and approve it before it becomes a sales order in SAP S/4HANA.
+
+Entity: BookingRequest
+- requestNumber
+- receivedAt
+- senderEmail
+- subject
+- originalMessage (long text)
+- language
+- customerNumber
+- tripProductCode
+- destination
+- departureDate
+- returnDate
+- numberOfTravellers
+- budget and currency
+- missingInformation (long text)
+- aiRecommendation (long text)
+- aiConfidence (decimal, 0 to 100)
+- reviewerComment (long text)
+- status: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+- salesOrderNumber
+- errorMessage (long text)
+
+Entity: AuditEntry, linked to BookingRequest
+- timestamp
+- performedBy
+- action
+- fieldName
+- aiValue
+- finalValue
+
+User interface:
+- List page with filters for status, destination, departure date and received date.
+- Object page showing the original message, extracted booking details, AI recommendation, review result and audit history.
+- Colour the status field by its state.
+
+Actions on BookingRequest:
+- Approve: only when status is Ready for Review. Sets status to Approved.
+- Reject: requires a reviewer comment. Sets status to Rejected.
+- Request Information: sets status to Needs Information.
+
+Validation:
+- Return date must be after departure date.
+- Number of travellers must be at least 1.
+- Budget must not be negative.
+
+Include realistic sample data for 10 booking requests using invented customers and example.com email addresses, covering every status.
+Do not include real personal data.
+</UserInput>
+
+----------Response:----------
+```csv
+lineContent,category
+Build an SAP CAP application with an SAP Fiori elements UI called "TravelOrder AI Intake". ,NONE
+Business purpose:,NONE
+Travel agency staff receive booking requests from customers by email.,NONE
+The application helps staff review each request, correct it, and approve it before it becomes a sales order in SAP S/4HANA.,NONE
+Entity: BookingRequest, NONE
+- requestNumber, NONE
+- receivedAt, NONE
+- senderEmail, NONE
+- subject, NONE
+- originalMessage (long text), NONE
+- language, NONE
+- customerNumber, NONE
+- tripProductCode, NONE
+- destination, NONE
+- departureDate, NONE
+- returnDate, NONE
+- numberOfTravellers, NONE
+- budget and currency, NONE
+- missingInformation (long text), NONE
+- aiRecommendation (long text), NONE
+- aiConfidence (decimal, 0 to 100), NONE
+- reviewerComment (long text), NONE
+- status: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed, NONE
+- salesOrderNumber, NONE
+- errorMessage (long text), NONE
+Entity: AuditEntry, linked to BookingRequest, NONE
+- timestamp, NONE
+- performedBy, NONE
+- action, NONE
+- fieldName, NONE
+- aiValue, NONE
+- finalValue, NONE
+User interface:,NONE
+- List page with filters for status, destination, departure date and received date.,LIST_REPORT_BOOKINGREQUESTS
+- Object page showing the original message, extracted booking details, AI recommendation, review result and audit history.,OBJECT_PAGE_BOOKINGREQUESTS
+- Colour the status field by its state.,NONE
+Actions on BookingRequest:,NONE
+- Approve: only when status is Ready for Review. Sets status to Approved.,NONE
+- Reject: requires a reviewer comment. Sets status to Rejected.,NONE
+- Request Information: sets status to Needs Information.,NONE
+Validation:,NONE
+- Return date must be after departure date.,NONE
+- Number of travellers must be at least 1.,NONE
+- Budget must not be negative.,NONE
+Include realistic sample data for 10 booking requests using invented customers and example.com email addresses, covering every status.,NONE
+Do not include real personal data.,NONE
+```
+2026-11-09T13:18:38.831Z [info] Step "loopOverPages": looping over 3 entries
+"
+2026-11-09T13:18:38.831Z [info] Step "loopOverPages" index 0: pageType=ListReport, entityType=BookingRequests
+2026-11-09T13:18:38.831Z [info] Step "ifListReportPage": case 0 passed! Evaluation details:
+ - Variable "pageType" : "ListReport"
+2026-11-09T13:18:41.439Z [info] 
+==========LLM call for step "extractListReport":==========
+A Fiori Elements Application has the following pages:
+ - ListReport page for "BookingRequests"
+ - ObjectPage for "BookingRequests"
+ - ObjectPage for "AuditEntries"
+
+Available entities with their associations and elements are:
+Entity "BookingRequests"
+   Properties:
+       requestNumber: Unique identifier for each booking request, semantic key
+       receivedAt: Timestamp when the booking request was received
+       senderEmail: Email address of the customer who sent the booking request
+       subject: Subject line of the received email
+       originalMessage: Full original email message text (long text)
+       language: Language code of the booking request (e.g. EN, DE)
+       customerNumber: Customer identifier in the system
+       tripProductCode: Code of the trip product requested
+       destination: Destination of the trip
+       departureDate: Planned departure date
+       returnDate: Planned return date, must be after departureDate
+       numberOfTravellers: Number of travellers, minimum 1
+       budget: Budget amount for the trip, must not be negative
+       currency: Currency code for the budget (ISO 4217)
+       missingInformation: Long text describing any missing information in the request
+       aiRecommendation: AI generated recommendation text
+       aiConfidence: AI confidence score from 0 to 100
+       reviewerComment: Reviewer comments, required for rejection
+       status: Status of the booking request: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+       salesOrderNumber: Sales order number created in SAP S/4HANA after approval
+       errorMessage: Error message if processing failed
+   Associations:
+       AuditEntries: association to many entities AuditEntries
+Entity "AuditEntries"
+   Properties:
+       auditEntryId: Unique identifier for audit entry
+       timestamp: Timestamp when the audit action was performed
+       performedBy: User or system who performed the action
+       action: Action performed (e.g. Approve, Reject, Request Information, Edit)
+       fieldName: Name of the field changed or affected
+       aiValue: Value suggested by AI before review
+       finalValue: Final value after review or change
+   Associations:
+       bookingRequests: association to single entity BookingRequests
+
+The user input below describes the details of the ListReport page (i.e. its filters, tables or views with their columns).
+
+Your task is to help the user defining the ListReport page.
+
+You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
+
+"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
+
+For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
+Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
+
+Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
+```json
+{
+  "type": "object",
+  "properties": {
+    "loadDataOnAppLaunch": {
+      "type": "string",
+      "enum": [
+        "Auto",
+        "Disabled",
+        "Enabled"
+      ],
+      "description": "'Auto': no explicit user input to load the data after start or an explicit user input to set InitialLoad for table to Auto; 'Disabled': An initial load of data does not occur at app start and the user has to actively click the Go button;  'Enabled': An initial load of data occurs automatically after start  (list is visible without pressing the GO Button)."
+    },
+    "tables": {
+      "type": "array",
+      "description": "tables (views) expected in user input",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "baseEntityType": {
+            "type": "string",
+            "description": "base entity type for the table"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "propertyPaths for columns"
+          }
+        },
+        "required": [
+          "title",
+          "baseEntityType",
+          "columns"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "filters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "propertyPaths for filters specified in user input. If not specified, empty array"
+    }
+  },
+  "required": [
+    "tables"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output ONLY the json contents and try to be as accurate as comprehensive as possible.
+
+<UserInput>
+Build an SAP CAP application with an SAP Fiori elements UI called "TravelOrder AI Intake". 
+Business purpose:
+Travel agency staff receive booking requests from customers by email.
+The application helps staff review each request, correct it, and approve it before it becomes a sales order in SAP S/4HANA.
+Entity: BookingRequest
+- requestNumber
+- receivedAt
+- senderEmail
+- subject
+- originalMessage (long text)
+- language
+- customerNumber
+- tripProductCode
+- destination
+- departureDate
+- returnDate
+- numberOfTravellers
+- budget and currency
+- missingInformation (long text)
+- aiRecommendation (long text)
+- aiConfidence (decimal, 0 to 100)
+- reviewerComment (long text)
+- status: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+- salesOrderNumber
+- errorMessage (long text)
+Entity: AuditEntry, linked to BookingRequest
+- timestamp
+- performedBy
+- action
+- fieldName
+- aiValue
+- finalValue
+User interface:
+- List page with filters for status, destination, departure date and received date.
+</UserInput>
+
+----------Response:----------
+```json
+{
+  "loadDataOnAppLaunch": "Auto",
+  "filters": [
+    "status",
+    "destination",
+    "departureDate",
+    "receivedAt"
+  ],
+  "tables": [
+    {
+      "id": "BookingRequestsTable",
+      "title": "Booking Requests",
+      "baseEntityType": "BookingRequests",
+      "columns": [
+        "requestNumber",
+        "receivedAt",
+        "senderEmail",
+        "subject",
+        "language",
+        "customerNumber",
+        "tripProductCode",
+        "destination",
+        "departureDate",
+        "returnDate",
+        "numberOfTravellers",
+        "budget",
+        "currency",
+        "status",
+        "salesOrderNumber",
+        "errorMessage"
+      ]
+    }
+  ]
+}
+```
+2026-11-09T13:18:41.441Z [info] Step "loopOverPages" index 1: pageType=ObjectPage, entityType=BookingRequests
+2026-11-09T13:18:41.441Z [info] Step "ifListReportPage": case 0 blocked! Evaluation details:
+ - Variable "pageType" : "ObjectPage"
+2026-11-09T13:18:41.441Z [info] Step "ifListReportPage": no condition met - running default steps
+2026-11-09T13:18:47.110Z [info] 
+==========LLM call for step "extractSingleObjectPageOfMany":==========
+The user input below describes a Fiori Elements Application with the following pages:
+ - ListReport page for "BookingRequests"
+ - ObjectPage for "BookingRequests"
+ - ObjectPage for "AuditEntries"
+
+Your task is to find the details of the ObjectPage for "BookingRequests".
+The base entity of the ObjectPage is BookingRequests.
+This ObjectPage can contain tabs and/or sections which in turn contain tables and fields.
+It must contain table sections containing data for associated entity "AuditEntries" (via association AuditEntries);
+
+The underlying data model allows the following propertyPaths:
+ - requestNumber: Request Number (of Booking Request)
+ - receivedAt: Received At (of Booking Request)
+ - senderEmail: Sender Email (of Booking Request)
+ - subject: Subject (of Booking Request)
+ - originalMessage: Original Message (of Booking Request)
+ - language: Language (of Booking Request)
+ - customerNumber: Customer Number (of Booking Request)
+ - tripProductCode: Trip Product Code (of Booking Request)
+ - destination: Destination (of Booking Request)
+ - departureDate: Departure Date (of Booking Request)
+ - returnDate: Return Date (of Booking Request)
+ - numberOfTravellers: Number Of Travellers (of Booking Request)
+ - budget: Budget (of Booking Request)
+ - currency: Currency (of Booking Request)
+ - missingInformation: Missing Information (of Booking Request)
+ - aiRecommendation: Ai Recommendation (of Booking Request)
+ - aiConfidence: Ai Confidence (of Booking Request)
+ - reviewerComment: Reviewer Comment (of Booking Request)
+ - status: Status (of Booking Request)
+ - salesOrderNumber: Sales Order Number (of Booking Request)
+ - errorMessage: Error Message (of Booking Request)
+ - AuditEntries/auditEntryId: Audit Entry Id (of many associated Audit Entry)
+ - AuditEntries/timestamp: Timestamp (of many associated Audit Entry)
+ - AuditEntries/performedBy: Performed By (of many associated Audit Entry)
+ - AuditEntries/action: Action (of many associated Audit Entry)
+ - AuditEntries/fieldName: Field Name (of many associated Audit Entry)
+ - AuditEntries/aiValue: Ai Value (of many associated Audit Entry)
+ - AuditEntries/finalValue: Final Value (of many associated Audit Entry)
+
+You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
+
+"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
+
+For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
+Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
+
+Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
+```json
+{
+  "type": "object",
+  "properties": {
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isTableSection": {
+            "type": "boolean",
+            "description": "if true, 'fields' represent columns of the table section and propertyPaths need to start with 1:n association"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "propertyPath"
+          }
+        },
+        "required": [
+          "title",
+          "id",
+          "fields"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "tabs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "subsections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "list of sections ids relevant for the tab"
+          }
+        },
+        "required": [
+          "title",
+          "id",
+          "subsections"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "sections",
+    "tabs"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output ONLY the json contents and try to be as accurate as comprehensive as possible.
+
+<UserInput>
+- Object page showing the original message, extracted booking details, AI recommendation, review result and audit history.
+- Colour the status field by its state.
+Actions on BookingRequest:
+- Approve: only when status is Ready for Review. Sets status to Approved.
+- Reject: requires a reviewer comment. Sets status to Rejected.
+- Request Information: sets status to Needs Information.
+Validation:
+- Return date must be after departure date.
+- Number of travellers must be at least 1.
+- Budget must not be negative.
+Include realistic sample data for 10 booking requests using invented customers and example.com email addresses, covering every status.
+Do not include real personal data.
+</UserInput>
+
+----------Response:----------
+```json
+{
+  "sections": [
+    {
+      "title": "Original Message",
+      "id": "originalMessageSection",
+      "fields": [
+        "originalMessage"
+      ]
+    },
+    {
+      "title": "Booking Details",
+      "id": "bookingDetailsSection",
+      "fields": [
+        "requestNumber",
+        "receivedAt",
+        "senderEmail",
+        "subject",
+        "language",
+        "customerNumber",
+        "tripProductCode",
+        "destination",
+        "departureDate",
+        "returnDate",
+        "numberOfTravellers",
+        "budget",
+        "currency"
+      ]
+    },
+    {
+      "title": "AI Recommendation and Review",
+      "id": "aiReviewSection",
+      "fields": [
+        "aiRecommendation",
+        "aiConfidence",
+        "reviewerComment",
+        "status",
+        "salesOrderNumber",
+        "errorMessage"
+      ]
+    },
+    {
+      "title": "Audit History",
+      "id": "auditEntriesTableSection",
+      "isTableSection": true,
+      "fields": [
+        "AuditEntries/auditEntryId",
+        "AuditEntries/timestamp",
+        "AuditEntries/performedBy",
+        "AuditEntries/action",
+        "AuditEntries/fieldName",
+        "AuditEntries/aiValue",
+        "AuditEntries/finalValue"
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "title": "Details",
+      "id": "detailsTab",
+      "subsections": [
+        "originalMessageSection",
+        "bookingDetailsSection",
+        "aiReviewSection"
+      ]
+    },
+    {
+      "title": "Audit",
+      "id": "auditTab",
+      "subsections": [
+        "auditEntriesTableSection"
+      ]
+    }
+  ]
+}
+```
+2026-11-09T13:18:47.111Z [info] Step "loopOverPages" index 2: pageType=ObjectPage, entityType=AuditEntries
+2026-11-09T13:18:47.111Z [info] Step "ifListReportPage": case 0 blocked! Evaluation details:
+ - Variable "pageType" : "ObjectPage"
+2026-11-09T13:18:47.111Z [info] Step "ifListReportPage": no condition met - running default steps
+2026-11-09T13:18:47.111Z [info] Step "extractSingleObjectPageOfMany" SKIPPED: no user input after filter
+2026-11-09T13:18:47.111Z [info] Step "ifCodeListsPresent": case 0 passed! Evaluation details:
+ - JSONPath "$.model.entities[*].elements[*].values[*]" : ["EN","DE","New","Needs Information","Ready for Review","Approved","Rejected","Order Created","Failed","Approve","Reject","Request Information","Edit"]
+2026-11-09T13:18:54.267Z [info] 
+==========LLM call for step "extractColors":==========
+You help the user creating a Fiori Elements application based on user input describing such an application.
+Your task is to determine whether the entity properties can be considered good and bad in most contexts or are usually neutral. When in doubt, set to neutral.
+
+These are the entity properties and their values:
+Entity: BookingRequests, Property: language, Values: EN, DE
+Entity: BookingRequests, Property: status, Values: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+Entity: AuditEntries, Property: action, Values: Approve, Reject, Request Information, Edit
+
+If the properties can be considered good and bad, the allowed values for their criticality and the associated colors are:
+   negative: red
+   critical: yellow or orange
+   positive: green
+   neutral:  grey
+
+You must format your output as a JSON value that adheres to a given "JSON Schema" instance.
+
+"JSON Schema" is a declarative language that allows you to annotate and validate JSON documents.
+
+For example, the example "JSON Schema" instance {{"properties": {{"foo": {{"description": "a list of test words", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+would match an object with one required property, "foo". The "type" property specifies "foo" must be an "array", and the "description" property semantically describes it as "a list of test words". The items within "foo" must be strings.
+Thus, the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of this example "JSON Schema". The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Your output will be parsed and type-checked according to the provided schema instance, so make sure all fields in your output match the schema exactly and there are no trailing commas!
+
+Here is the JSON Schema instance your output must adhere to. Include the enclosing markdown codeblock:
+```json
+{
+  "type": "object",
+  "properties": {
+    "properties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entity": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "hasColorsOrCriticality": {
+            "type": "boolean",
+            "description": "true if the given values of the property can be good or bad, false if they are usually neutral"
+          },
+          "reason": {
+            "type": "string",
+            "description": "detailed explanation why you set hasColorsOrCriticality to this value"
+          },
+          "mapping": {
+            "type": "array",
+            "description": "empty if 'hasColorsOrCriticality' is false",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "description": "value of property"
+                },
+                "colorOrCriticality": {
+                  "type": "string",
+                  "description": "color or criticality associated with value"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "detailed explanation why you set ColorOrCriticality to this value"
+                }
+              },
+              "required": [
+                "value",
+                "colorOrCriticality"
+              ]
+            }
+          }
+        },
+        "required": [
+          "entity",
+          "property"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "properties"
+  ],
+  "additionalProperties": false
+}
+```
+
+Output ONLY the json contents and try to be as accurate as comprehensive as possible.
+
+<UserInput>
+Build an SAP CAP application with an SAP Fiori elements UI called "TravelOrder AI Intake".
+
+Business purpose:
+Travel agency staff receive booking requests from customers by email. The application helps staff review each request, correct it, and approve it before it becomes a sales order in SAP S/4HANA.
+
+Entity: BookingRequest
+- requestNumber
+- receivedAt
+- senderEmail
+- subject
+- originalMessage (long text)
+- language
+- customerNumber
+- tripProductCode
+- destination
+- departureDate
+- returnDate
+- numberOfTravellers
+- budget and currency
+- missingInformation (long text)
+- aiRecommendation (long text)
+- aiConfidence (decimal, 0 to 100)
+- reviewerComment (long text)
+- status: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+- salesOrderNumber
+- errorMessage (long text)
+
+Entity: AuditEntry, linked to BookingRequest
+- timestamp
+- performedBy
+- action
+- fieldName
+- aiValue
+- finalValue
+
+User interface:
+- List page with filters for status, destination, departure date and received date.
+- Object page showing the original message, extracted booking details, AI recommendation, review result and audit history.
+- Colour the status field by its state.
+
+Actions on BookingRequest:
+- Approve: only when status is Ready for Review. Sets status to Approved.
+- Reject: requires a reviewer comment. Sets status to Rejected.
+- Request Information: sets status to Needs Information.
+
+Validation:
+- Return date must be after departure date.
+- Number of travellers must be at least 1.
+- Budget must not be negative.
+
+Include realistic sample data for 10 booking requests using invented customers and example.com email addresses, covering every status.
+Do not include real personal data.
+</UserInput>
+
+
+----------Response:----------
+```json
+{
+  "properties": [
+    {
+      "entity": "BookingRequests",
+      "property": "language",
+      "hasColorsOrCriticality": false,
+      "reason": "Language values (EN, DE) are neutral identifiers of language and do not imply good or bad states.",
+      "mapping": []
+    },
+    {
+      "entity": "BookingRequests",
+      "property": "status",
+      "hasColorsOrCriticality": true,
+      "reason": "Status values represent different stages and outcomes of the booking request process, some positive (Approved, Order Created), some negative (Rejected, Failed), and some critical or neutral (New, Needs Information, Ready for Review). Coloring helps users quickly identify the state.",
+      "mapping": [
+        {
+          "value": "New",
+          "colorOrCriticality": "grey",
+          "reason": "New is a neutral initial state indicating a fresh booking request."
+        },
+        {
+          "value": "Needs Information",
+          "colorOrCriticality": "yellow",
+          "reason": "Needs Information indicates a critical state requiring user action to proceed."
+        },
+        {
+          "value": "Ready for Review",
+          "colorOrCriticality": "grey",
+          "reason": "Ready for Review is a neutral state indicating the request is prepared for decision."
+        },
+        {
+          "value": "Approved",
+          "colorOrCriticality": "green",
+          "reason": "Approved is a positive state indicating successful approval."
+        },
+        {
+          "value": "Rejected",
+          "colorOrCriticality": "red",
+          "reason": "Rejected is a negative state indicating the request was declined."
+        },
+        {
+          "value": "Order Created",
+          "colorOrCriticality": "green",
+          "reason": "Order Created is a positive state indicating successful creation of a sales order."
+        },
+        {
+          "value": "Failed",
+          "colorOrCriticality": "red",
+          "reason": "Failed is a negative state indicating an error or failure in processing."
+        }
+      ]
+    },
+    {
+      "entity": "AuditEntries",
+      "property": "action",
+      "hasColorsOrCriticality": true,
+      "reason": "Audit actions represent user decisions or changes that can be positive (Approve), negative (Reject), or critical (Request Information). Coloring helps distinguish the nature of the action.",
+      "mapping": [
+        {
+          "value": "Approve",
+          "colorOrCriticality": "green",
+          "reason": "Approve is a positive action indicating acceptance."
+        },
+        {
+          "value": "Reject",
+          "colorOrCriticality": "red",
+          "reason": "Reject is a negative action indicating denial."
+        },
+        {
+          "value": "Request Information",
+          "colorOrCriticality": "yellow",
+          "reason": "Request Information is a critical action requesting further input."
+        },
+        {
+          "value": "Edit",
+          "colorOrCriticality": "grey",
+          "reason": "Edit is a neutral action indicating modification without inherent positive or negative connotation."
+        }
+      ]
+    }
+  ]
+}
+```
+2026-11-09T13:18:54.269Z [info] 2/8: Build CDS files
+2026-11-09T13:18:54.285Z [info] 3/8: Checking staging project root folder "&#x2F;home&#x2F;user&#x2F;projects&#x2F;TravelOrder-AI"
+2026-11-09T13:18:54.346Z [info] 4/8: Generating mock data
+2026-11-09T13:19:11.900Z [info] 
+==========LLM call for data generation:==========
+
+For the following list of entities, create data for the empty CSV files.
+Entity "BookingRequests" - Properties:
+    requestNumber: String(50), Unique identifier for each booking request, semantic key
+    receivedAt: DateTime, Timestamp when the booking request was received
+    senderEmail: String(100), Email address of the customer who sent the booking request
+    subject: String(200), Subject line of the received email
+    originalMessage: String(255), Full original email message text (long text)
+    language: String(10), Language code of the booking request (e.g. EN, DE)
+    customerNumber: String(20), Customer identifier in the system
+    tripProductCode: String(30), Code of the trip product requested
+    destination: String(100), Destination of the trip
+    departureDate: Date, Planned departure date
+    returnDate: Date, Planned return date, must be after departureDate
+    numberOfTravellers: Integer, Number of travellers, minimum 1
+    budget: Decimal, Budget amount for the trip, must not be negative
+    currency: String(3), Currency code for the budget (ISO 4217)
+    missingInformation: String(255), Long text describing any missing information in the request
+    aiRecommendation: String(255), AI generated recommendation text
+    aiConfidence: Decimal, AI confidence score from 0 to 100
+    reviewerComment: String(255), Reviewer comments, required for rejection
+    status: String(30), Status of the booking request: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+    salesOrderNumber: String(50), Sales order number created in SAP S/4HANA after approval
+    errorMessage: String(255), Error message if processing failed
+
+Entity "AuditEntries" - Properties:
+    auditEntryId: String(50), Unique identifier for audit entry
+    timestamp: DateTime, Timestamp when the audit action was performed
+    performedBy: String(100), User or system who performed the action
+    action0: String(50), Action performed (e.g. Approve, Reject, Request Information, Edit)
+    fieldName: String(50), Name of the field changed or affected
+    aiValue: String(255), Value suggested by AI before review
+    finalValue: String(255), Final value after review or change
+    bookingRequests_requestNumber: String(50), requestNumber of associated BookingRequests
+
+Empty CSV files in json format (only generate content for these files!):
+{"BookingRequests.csv":"requestNumber;receivedAt;senderEmail;subject;originalMessage;language;customerNumber;tripProductCode;destination;departureDate;returnDate;numberOfTravellers;budget;currency;missingInformation;aiRecommendation;aiConfidence;reviewerComment;status;salesOrderNumber;errorMessage","AuditEntries.csv":"auditEntryId;timestamp;performedBy;action0;fieldName;aiValue;finalValue;bookingRequests_requestNumber"}
+
+Rules:
+    - Take over the given header line, do not invent new columns!
+    - For a given file, add rows, add '\n' characters before each row but don't break the JSON string
+    - Do not generate rows with same key values, they must be unique!
+    - Make sure that associations match, i.e. a field containing "Name of the associated Customer" must contain an existing Name of entity Customer
+    - Always use ";" as a delimiter in CSV files
+    - The result must be proper JSON format so it can be parsed, don't break JSON strings within, don't add quotes around values.
+    - Create exactly 10 rows (data records) for EACH csv file (do NOT count the header line as a row)
+    - All values must be realistic with meaningful content, e.g. 'Laptop Screen' and not just placeholder values with incremented numbers like 'Product 1', 'Product 2' etc.
+
+Use format for values:
+  String(50): string no longer than 50 characters
+  DateTime: 2021-06-27T14:52:23Z
+  Date: 2021-06-27
+  Integer, Double: only numbers, no special symbols
+  Decimal(3,2): 1.23
+
+For the following fields, use only the supplied allowed values (as they are, don't insert spaces or change case):
+- language (of BookingRequests): EN, DE
+- status (of BookingRequests): New, NeedsInformation, ReadyforReview, Approved, Rejected, OrderCreated, Failed
+- action0 (of AuditEntries): Approve, Reject, RequestInformation, Edit
+
+Example output (Do NOT include in output!):
+```json
+{"Blogs":"blogID;title;description;createdDateTime;views\nBlog1;Tech Blog;A blog about the latest technology trends.;2023-06-27T14:52:23Z;1000\nBlog2;Fashion Blog;Explore the world of fashion and style.;2023-06-27T14:52:23Z;500","Posts":"postID;title;content;publishDate;likes;comments;blogID\n1;The Future of Artificial Intelligence;Artificial intelligence is shaping the future of technology.;2023-06-27;50;10;Blog1
+2;Summer Fashion Trends;Discover the hottest fashion trends for the summer season.;2023-06-27;100;20;Blog2\n3;Must-Have Accessories;10 must-have accessories for the upcoming season;2023-06-27;100;20;Blog2"}
+```
+Output ONLY the json contents for the csv files and try to be as accurate as possible.
+
+
+
+----------Response:----------
+```json
+{"BookingRequests.csv":"requestNumber;receivedAt;senderEmail;subject;originalMessage;language;customerNumber;tripProductCode;destination;departureDate;returnDate;numberOfTravellers;budget;currency;missingInformation;aiRecommendation;aiConfidence;reviewerComment;status;salesOrderNumber;errorMessage\nBRQ001;2024-05-10T09:15:00Z;john.doe@example.com;Family trip to Italy;Looking to book a family trip to Rome and Florence.;EN;CUST1001;TRIPITALY01;Rome, Italy;2024-07-15;2024-07-25;4;3500.00;EUR;;Consider upgrading to a guided city tour;87.50;;;New;\nBRQ002;2024-05-11T11:30:00Z;anna.schmidt@example.de;Business trip to Berlin;Requesting a business trip package including hotel and transport.;DE;CUST1002;TRIPBERLIN02;Berlin, Germany;2024-06-20;2024-06-23;1;1200.00;EUR;;Recommend business class flight option;92.00;;;ReadyforReview;SO12345;\nBRQ003;2024-05-12T14:45:00Z;maria.garcia@example.com;Honeymoon in Maldives;Planning honeymoon stay with beach resort and activities.;EN;CUST1003;TRIPMALDIVES03;Maldives;2024-08-01;2024-08-10;2;8000.00;USD;Missing preferred resort details;Suggest premium resort with spa package;95.00;Needs more info;NeedsInformation;;\nBRQ004;2024-05-13T08:20:00Z;peter.mueller@example.de;Ski trip to Alps;Interested in ski trip with equipment rental included.;DE;CUST1004;TRIPALPS04;Alps, Austria;2024-12-15;2024-12-22;3;4500.00;EUR;;Recommend ski pass and rental combo;89.00;;;Approved;SO12346;\nBRQ005;2024-05-14T10:05:00Z;lucy.brown@example.com;Cultural tour Japan;Requesting cultural tour package with local guides.;EN;CUST1005;TRIPJAPAN05;Kyoto, Japan;2024-09-10;2024-09-20;2;6000.00;USD;;Suggest adding tea ceremony experience;90.00;;;OrderCreated;SO12347;\nBRQ006;2024-05-15T13:50:00Z;thomas.schneider@example.de;City break Paris;Looking for a weekend city break with museum passes.;DE;CUST1006;TRIPPARIS06;Paris, France;2024-06-05;2024-06-08;1;1500.00;EUR;;Missing hotel preference;Recommend central hotel near museums;85.00;Please specify hotel type;NeedsInformation;;\nBRQ007;2024-05-16T15:40:00Z;emily.jones@example.com;Safari adventure Kenya;Interested in safari adventure with guided tours.;EN;CUST1007;TRIPKENYA07;Nairobi, Kenya;2024-10-01;2024-10-12;2;7000.00;USD;;Missing vaccination info;Recommend vaccination checklist;88.00;;;Rejected; ;Incomplete vaccination details\nBRQ008;2024-05-17T09:10:00Z;markus.fischer@example.de;Cruise Mediterranean;Requesting Mediterranean cruise with shore excursions.;DE;CUST1008;TRIPCRUISE08;Mediterranean Sea;2024-07-01;2024-07-14;2;9000.00;EUR;;Suggest premium cabin upgrade;91.00;;;ReadyforReview;SO12348;\nBRQ009;2024-05-18T12:25:00Z;sophia.wilson@example.com;Road trip USA West Coast;Planning a road trip from San Francisco to LA.;EN;CUST1009;TRIPUSWEST09;California, USA;2024-08-15;2024-08-25;3;4000.00;USD;;Missing car rental details;Recommend SUV rental;86.00;;;New;\nBRQ010;2024-05-19T14:00:00Z;jan.keller@example.de;Wellness retreat Bali;Interested in wellness retreat with yoga sessions.;DE;CUST1010;TRIPBALI10;Bali, Indonesia;2024-11-05;2024-11-15;1;5000.00;EUR;;Missing dietary preferences;Suggest vegan meal options;93.00;;;Approved;SO12349;"},"AuditEntries.csv":"auditEntryId;timestamp;performedBy;action0;fieldName;aiValue;finalValue;bookingRequests_requestNumber\nAE001;2024-05-11T10:00:00Z;reviewer1;Approve;status;ReadyforReview;Approved;BRQ002\nAE002;2024-05-13T09:00:00Z;reviewer2;RequestInformation;missingInformation;;Needs more info;BRQ003\nAE003;2024-05-14T11:00:00Z;reviewer3;Approve;status;ReadyforReview;Approved;BRQ004\nAE004;2024-05-15T14:00:00Z;reviewer4;Reject;status;ReadyforReview;Rejected;BRQ007\nAE005;2024-05-16T16:00:00Z;reviewer5;RequestInformation;reviewerComment;;Please specify hotel type;BRQ006\nAE006;2024-05-17T10:00:00Z;reviewer6;Approve;status;ReadyforReview;OrderCreated;BRQ005\nAE007;2024-05-18T13:00:00Z;reviewer7;Edit;aiRecommendation;Recommend SUV rental;Recommend SUV rental with GPS;BRQ009\nAE008;2024-05-19T15:00:00Z;reviewer8;Approve;status;ReadyforReview;Approved;BRQ010\nAE009;2024-05-20T08:00:00Z;reviewer9;Approve;status;New;ReadyforReview;BRQ008\nAE010;2024-05-21T09:30:00Z;reviewer10;Reject;reviewerComment;;Incomplete vaccination details;BRQ007"}
+```
+2026-11-09T13:19:27.724Z [info] 
+==========LLM call for data generation:==========
+
+For the following list of entities, create data for the empty CSV files.
+Entity "BookingRequests" - Properties:
+    requestNumber: String(50), Unique identifier for each booking request, semantic key
+    receivedAt: DateTime, Timestamp when the booking request was received
+    senderEmail: String(100), Email address of the customer who sent the booking request
+    subject: String(200), Subject line of the received email
+    originalMessage: String(255), Full original email message text (long text)
+    language: String(10), Language code of the booking request (e.g. EN, DE)
+    customerNumber: String(20), Customer identifier in the system
+    tripProductCode: String(30), Code of the trip product requested
+    destination: String(100), Destination of the trip
+    departureDate: Date, Planned departure date
+    returnDate: Date, Planned return date, must be after departureDate
+    numberOfTravellers: Integer, Number of travellers, minimum 1
+    budget: Decimal, Budget amount for the trip, must not be negative
+    currency: String(3), Currency code for the budget (ISO 4217)
+    missingInformation: String(255), Long text describing any missing information in the request
+    aiRecommendation: String(255), AI generated recommendation text
+    aiConfidence: Decimal, AI confidence score from 0 to 100
+    reviewerComment: String(255), Reviewer comments, required for rejection
+    status: String(30), Status of the booking request: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed
+    salesOrderNumber: String(50), Sales order number created in SAP S/4HANA after approval
+    errorMessage: String(255), Error message if processing failed
+
+Entity "AuditEntries" - Properties:
+    auditEntryId: String(50), Unique identifier for audit entry
+    timestamp: DateTime, Timestamp when the audit action was performed
+    performedBy: String(100), User or system who performed the action
+    action0: String(50), Action performed (e.g. Approve, Reject, Request Information, Edit)
+    fieldName: String(50), Name of the field changed or affected
+    aiValue: String(255), Value suggested by AI before review
+    finalValue: String(255), Final value after review or change
+    bookingRequests_requestNumber: String(50), requestNumber of associated BookingRequests
+
+Empty CSV files in json format (only generate content for these files!):
+{"BookingRequests.csv":"requestNumber;receivedAt;senderEmail;subject;originalMessage;language;customerNumber;tripProductCode;destination;departureDate;returnDate;numberOfTravellers;budget;currency;missingInformation;aiRecommendation;aiConfidence;reviewerComment;status;salesOrderNumber;errorMessage","AuditEntries.csv":"auditEntryId;timestamp;performedBy;action0;fieldName;aiValue;finalValue;bookingRequests_requestNumber"}
+
+Rules:
+    - Take over the given header line, do not invent new columns!
+    - For a given file, add rows, add '\n' characters before each row but don't break the JSON string
+    - Do not generate rows with same key values, they must be unique!
+    - Make sure that associations match, i.e. a field containing "Name of the associated Customer" must contain an existing Name of entity Customer
+    - Always use ";" as a delimiter in CSV files
+    - The result must be proper JSON format so it can be parsed, don't break JSON strings within, don't add quotes around values.
+    - Create exactly 10 rows (data records) for EACH csv file (do NOT count the header line as a row)
+    - All values must be realistic with meaningful content, e.g. 'Laptop Screen' and not just placeholder values with incremented numbers like 'Product 1', 'Product 2' etc.
+
+Use format for values:
+  String(50): string no longer than 50 characters
+  DateTime: 2021-06-27T14:52:23Z
+  Date: 2021-06-27
+  Integer, Double: only numbers, no special symbols
+  Decimal(3,2): 1.23
+
+For the following fields, use only the supplied allowed values (as they are, don't insert spaces or change case):
+- language (of BookingRequests): EN, DE
+- status (of BookingRequests): New, NeedsInformation, ReadyforReview, Approved, Rejected, OrderCreated, Failed
+- action0 (of AuditEntries): Approve, Reject, RequestInformation, Edit
+
+Example output (Do NOT include in output!):
+```json
+{"Blogs":"blogID;title;description;createdDateTime;views\nBlog1;Tech Blog;A blog about the latest technology trends.;2023-06-27T14:52:23Z;1000\nBlog2;Fashion Blog;Explore the world of fashion and style.;2023-06-27T14:52:23Z;500","Posts":"postID;title;content;publishDate;likes;comments;blogID\n1;The Future of Artificial Intelligence;Artificial intelligence is shaping the future of technology.;2023-06-27;50;10;Blog1
+2;Summer Fashion Trends;Discover the hottest fashion trends for the summer season.;2023-06-27;100;20;Blog2\n3;Must-Have Accessories;10 must-have accessories for the upcoming season;2023-06-27;100;20;Blog2"}
+```
+Output ONLY the json contents for the csv files and try to be as accurate as possible.
+
+
+
+----------Response:----------
+{"BookingRequests.csv":"requestNumber;receivedAt;senderEmail;subject;originalMessage;language;customerNumber;tripProductCode;destination;departureDate;returnDate;numberOfTravellers;budget;currency;missingInformation;aiRecommendation;aiConfidence;reviewerComment;status;salesOrderNumber;errorMessage\nBRQ10001;2024-05-10T09:15:00Z;jane.doe@example.com;Family trip to Italy;Looking to book a family trip to Rome and Florence in July.;EN;CUST12345;TRIPITALY2024;Rome, Italy;2024-07-10;2024-07-20;4;4500.00;EUR;;Consider upgrading to a guided tour package;87.50;;;New;\nBRQ10002;2024-05-11T14:30:00Z;max.mustermann@example.de;Geschäftsreise Berlin;Ich benötige eine Geschäftsreise nach Berlin im Juni.;DE;CUST54321;TRIPBERLIN2024;Berlin, Germany;2024-06-15;2024-06-18;1;1200.00;EUR;Bitte geben Sie die Hotelpräferenz an;Empfehle ein zentrales Hotel in Berlin;92.00;Bitte Hotelpräferenz angeben;NeedsInformation;;\nBRQ10003;2024-05-12T08:45:00Z;anna.smith@example.com;Beach holiday in Spain;Requesting a beach holiday package for two in Mallorca.;EN;CUST67890;TRIPSPAIN2024;Mallorca, Spain;2024-08-05;2024-08-15;2;3000.00;EUR;;Suggest all-inclusive resort options;85.00;;;ReadyforReview;\nBRQ10004;2024-05-13T11:20:00Z;peter.schmidt@example.de;Winterurlaub Österreich;Planung eines Winterurlaubs in Tirol für 3 Personen.;DE;CUST11223;TRIPAUSTRIA2024;Tirol, Austria;2024-12-20;2024-12-30;3;4000.00;EUR;;Empfehle Skikurs und Ausrüstungsverleih;90.00;;;Approved;SO20240504;\nBRQ10005;2024-05-14T16:00:00Z;lucy.brown@example.com;City break Paris;Looking for a city break in Paris with cultural tours.;EN;CUST33445;TRIPPARIS2024;Paris, France;2024-09-10;2024-09-15;1;1800.00;EUR;;Empfehle Louvre und Eiffelturm Tickets;88.00;;;Rejected; ;Budget überschritten\nBRQ10006;2024-05-15T10:10:00Z;thomas.mueller@example.de;Familienurlaub Kroatien;Familienurlaub an der Adriaküste für 5 Personen.;DE;CUST55667;TRIPCROATIA2024;Dubrovnik, Croatia;2024-07-01;2024-07-14;5;5500.00;EUR;;Empfehle Ferienhaus mit Pool;89.50;;;OrderCreated;SO20240506;\nBRQ10007;2024-05-16T13:50:00Z;emily.jones@example.com;Adventure trip New Zealand;Requesting an adventure trip itinerary for New Zealand.;EN;CUST77889;TRIPNZ2024;Auckland, New Zealand;2024-10-05;2024-10-20;2;7000.00;USD;;Empfehle Bungee Jumping und Wandertouren;93.00;;;Failed; ;System error during processing\nBRQ10008;2024-05-17T09:05:00Z;oliver.schneider@example.de;Kulturreise Japan;Kulturreise nach Japan mit Schwerpunkt Kyoto und Tokio.;DE;CUST99001;TRIPJAPAN2024;Kyoto, Japan;2024-11-10;2024-11-25;1;6500.00;USD;;Empfehle Besuch von Tempeln und Museen;91.00;;;New;\nBRQ10009;2024-05-18T15:40:00Z;sophia.wilson@example.com;Romantic getaway Maldives;Planning a romantic getaway to the Maldives in December.;EN;CUST22334;TRIPMALDIVES2024;Maldives;2024-12-05;2024-12-15;2;8000.00;USD;;Empfehle Überwasserbungalow;95.00;;;ReadyforReview;\nBRQ10010;2024-05-19T12:25:00Z;jan.keller@example.de;Städtereise Prag;Städtereise nach Prag mit Fokus auf historische Sehenswürdigkeiten.;DE;CUST44556;TRIPPRAGUE2024;Prague, Czech Republic;2024-09-20;2024-09-25;1;1500.00;EUR;;Empfehle Altstadtführung;86.00;;;Approved;SO20240510;","AuditEntries.csv":"auditEntryId;timestamp;performedBy;action0;fieldName;aiValue;finalValue;bookingRequests_requestNumber\nAE10001;2024-05-11T10:00:00Z;reviewer1;RequestInformation;missingInformation;Bitte geben Sie die Hotelpräferenz an;Bitte geben Sie die Hotelpräferenz an;BRQ10002\nAE10002;2024-05-13T12:00:00Z;reviewer2;Approve;status;ReadyforReview;Approved;BRQ10004\nAE10003;2024-05-14T17:30:00Z;reviewer3;Reject;status;ReadyforReview;Rejected;BRQ10005\nAE10004;2024-05-15T11:00:00Z;system;Edit;aiConfidence;88.00;89.50;BRQ10006\nAE10005;2024-05-16T14:00:00Z;reviewer4;RequestInformation;reviewerComment;;Bitte Hotelpräferenz angeben;BRQ10002\nAE10006;2024-05-17T09:30:00Z;reviewer5;Approve;salesOrderNumber;;SO20240504;BRQ10004\nAE10007;2024-05-18T16:00:00Z;system;Edit;errorMessage;;System error during processing;BRQ10007\nAE10008;2024-05-19T13:00:00Z;reviewer6;Approve;status;ReadyforReview;Approved;BRQ10010\nAE10009;2024-05-20T08:45:00Z;reviewer7;Edit;aiRecommendation;Empfehle Altstadtführung;Empfehle Altstadtführung und Schlossbesuch;BRQ10010\nAE10010;2024-05-20T09:15:00Z;reviewer8;Reject;reviewerComment;;Budget überschritten;BRQ10005"}
+2026-11-09T13:19:27.728Z [info] 5/8: Initializing CAP project
+2026-11-09T13:19:28.424Z [info] 6/8: Copying files to CAP project
+2026-11-09T13:19:28.451Z [info] 7/8: Generating applications
+2026-11-09T13:19:36.568Z [info] 8/8: Installing node module dependencies

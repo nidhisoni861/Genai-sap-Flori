@@ -1,0 +1,6 @@
+code,name,criticality
+Confirmed,Confirmed,0
+Changed,Changed,2
+CancellationRequested,Cancellation Requested,2
+Cancelled,Cancelled,1
+Refunded,Refunded,3

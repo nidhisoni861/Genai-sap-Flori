@@ -1,0 +1,3 @@
+SalesOrder,SalesOrderType,SalesOrganization,DistributionChannel,OrganizationDivision,SoldToParty,PurchaseOrderByCustomer,TotalNetAmount,TransactionCurrency,CreationDate,OverallSDProcessStatus
+5000001,OR,1010,10,00,CUST55667,BRQ10006,5250,EUR,2026-11-02,A
+5000002,OR,1010,10,00,CUST44556,HIST-0002,700,EUR,2026-11-04,A

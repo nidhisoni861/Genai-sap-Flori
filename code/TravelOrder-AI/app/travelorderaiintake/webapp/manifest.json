@@ -1,0 +1,164 @@
+{
+    "_version": "1.87.0",
+    "sap.app": {
+        "id": "travelorderaiintake",
+        "type": "application",
+        "i18n": "i18n/i18n.properties",
+        "applicationVersion": {
+            "version": "0.0.1"
+        },
+        "title": "{{appTitle}}",
+        "description": "{{appDescription}}",
+        "resources": "resources.json",
+        "sourceTemplate": {
+            "id": "@sap/generator-fiori:lrop",
+            "version": "1.34.0",
+            "toolsId": "32f45405-38fa-484a-af42-d8cb8f4cf859"
+        },
+        "dataSources": {
+            "mainService": {
+                "uri": "/odata/v4/travelorderai-srv/",
+                "type": "OData",
+                "settings": {
+                    "annotations": [],
+                    "odataVersion": "4.0"
+                }
+            }
+        }
+    },
+    "sap.ui": {
+        "technology": "UI5",
+        "icons": {
+            "icon": "",
+            "favIcon": "",
+            "phone": "",
+            "phone@2": "",
+            "tablet": "",
+            "tablet@2": ""
+        },
+        "deviceTypes": {
+            "desktop": true,
+            "tablet": true,
+            "phone": true
+        }
+    },
+    "sap.ui5": {
+        "flexEnabled": true,
+        "dependencies": {
+            "minUI5Version": "1.149.0",
+            "libs": {
+                "sap.m": {},
+                "sap.ui.core": {},
+                "sap.fe.templates": {}
+            }
+        },
+        "contentDensities": {
+            "compact": true,
+            "cozy": true
+        },
+        "models": {
+            "i18n": {
+                "type": "sap.ui.model.resource.ResourceModel",
+                "settings": {
+                    "bundleName": "travelorderaiintake.i18n.i18n"
+                }
+            },
+            "": {
+                "dataSource": "mainService",
+                "preload": true,
+                "settings": {
+                    "operationMode": "Server",
+                    "autoExpandSelect": true,
+                    "earlyRequests": true
+                }
+            },
+            "@i18n": {
+                "type": "sap.ui.model.resource.ResourceModel",
+                "uri": "i18n/i18n.properties"
+            }
+        },
+        "resources": {
+            "css": []
+        },
+        "routing": {
+            "config": {},
+            "routes": [
+                {
+                    "pattern": ":?query:",
+                    "name": "BookingRequestsList",
+                    "target": "BookingRequestsList"
+                },
+                {
+                    "pattern": "BookingRequests({key}):?query:",
+                    "name": "BookingRequestsObjectPage",
+                    "target": "BookingRequestsObjectPage"
+                },
+                {
+                    "pattern": "BookingRequests({key})/AuditEntries({key2}):?query:",
+                    "name": "AuditEntriesObjectPage",
+                    "target": "AuditEntriesObjectPage"
+                }
+            ],
+            "targets": {
+                "BookingRequestsList": {
+                    "type": "Component",
+                    "id": "BookingRequestsList",
+                    "name": "sap.fe.templates.ListReport",
+                    "options": {
+                        "settings": {
+                            "contextPath": "/BookingRequests",
+                            "variantManagement": "Page",
+                            "navigation": {
+                                "BookingRequests": {
+                                    "detail": {
+                                        "route": "BookingRequestsObjectPage"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "BookingRequestsObjectPage": {
+                    "type": "Component",
+                    "id": "BookingRequestsObjectPage",
+                    "name": "sap.fe.templates.ObjectPage",
+                    "options": {
+                        "settings": {
+                            "contextPath": "/BookingRequests",
+                            "navigation": {
+                                "AuditEntries": {
+                                    "detail": {
+                                        "route": "AuditEntriesObjectPage"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "AuditEntriesObjectPage": {
+                    "type": "Component",
+                    "id": "AuditEntriesObjectPage",
+                    "name": "sap.fe.templates.ObjectPage",
+                    "options": {
+                        "settings": {
+                            "contextPath": "/BookingRequests/AuditEntries"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "sap.fiori": {
+        "registrationIds": [],
+        "archeType": "transactional"
+    },
+    "sap.fe": {
+        "app": {
+            "enableLazyLoading": true
+        }
+    },
+    "sap.cloud": {
+        "public": true,
+        "service": "travelorderai"
+    }
+}

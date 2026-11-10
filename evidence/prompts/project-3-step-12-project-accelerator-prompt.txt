@@ -1,0 +1,36 @@
+Build an SAP CAP application with an SAP Fiori elements UI called "TravelOrder Bookings Overview".
+
+Business purpose:
+Travel agency staff need one screen that shows all upcoming bookings and which ones need attention first, for example unpaid trips that depart soon or customers with special requests.
+
+Entity: TravelBooking
+- bookingNumber
+- customerName
+- customerEmail
+- destination
+- departureDate
+- returnDate
+- numberOfTravellers
+- totalPrice and currency
+- amountPaid
+- paymentStatus: Paid, Partly Paid, Unpaid
+- bookingStatus: Confirmed, Changed, Cancelled
+- customerNotes (long text)
+- aiSummary (long text)
+- aiPriority: Low, Medium, High
+- aiAlert (long text)
+- aiGeneratedAt (timestamp)
+
+User interface:
+- List page with filters for booking status, payment status, AI priority, destination and departure date.
+- List columns: booking number, customer, destination, departure date, payment status, AI priority.
+- Object page showing customer and trip details, payment details, customer notes and an AI Insights section with the summary, priority, alert and generated time.
+- Colour the AI priority and payment status fields by their state.
+
+Validation:
+- Return date must be after departure date.
+- Number of travellers must be at least 1.
+- Amount paid must not be negative and must not be more than the total price.
+
+Include realistic sample data for 12 bookings using invented customers and example.com email addresses, with varied departure dates in 2027, every payment status and every booking status. Some customer notes should mention special requests such as a wheelchair, a food allergy or a visa question. Leave the aiSummary, aiPriority, aiAlert and aiGeneratedAt fields empty.
+Do not include real personal data.

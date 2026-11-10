@@ -1,0 +1,8 @@
+code;name;criticality
+New;New;0
+NeedsInformation;Needs Information;2
+ReadyforReview;Ready for Review;0
+Approved;Approved;3
+Rejected;Rejected;1
+OrderCreated;Order Created;3
+Failed;Failed;1

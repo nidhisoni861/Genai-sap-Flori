@@ -1,0 +1,7 @@
+code;name;criticality
+Approve;Approve;3
+Reject;Reject;1
+RequestInformation;Request Information;2
+Edit;Edit;0
+AIExtraction;AI Extraction;0
+CreateSalesOrder;Create Sales Order;3

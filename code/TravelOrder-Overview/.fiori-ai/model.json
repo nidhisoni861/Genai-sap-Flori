@@ -1,0 +1,63 @@
+{
+    "namespace": "travelbookings",
+    "entities": [
+        {
+            "name": "TravelBookings",
+            "label": "Booking",
+            "labelPlural": "Bookings",
+            "associations": [],
+            "elements": [
+                {
+                    "name": "ID",
+                    "type": "UUID",
+                    "key": true,
+                    "label": ""
+                },
+                {
+                    "name": "name",
+                    "type": "String(50)",
+                    "label": "Name",
+                    "semanticKey": true,
+                    "additionalInfo": "Name of Booking"
+                }
+            ]
+        }
+    ],
+    "service": {
+        "name": "travelbookingsSrv",
+        "path": "srv/service.cds"
+    },
+    "applications": [
+        {
+            "pages": [
+                {
+                    "type": "ListReport",
+                    "entityType": "TravelBookings",
+                    "listReportContent": {
+                        "loadDataOnAppLaunch": "Auto",
+                        "filters": [],
+                        "tables": [
+                            {
+                                "title": "Travel Bookings",
+                                "baseEntityType": "TravelBookings",
+                                "columns": [],
+                                "id": "viewId"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "ObjectPage",
+                    "entityType": "TravelBookings",
+                    "objectPageContent": {
+                        "tableSectionAssociations": [],
+                        "sections": [],
+                        "tabs": [],
+                        "chartSections": []
+                    }
+                }
+            ],
+            "name": "travelBookingsOverview"
+        }
+    ]
+}

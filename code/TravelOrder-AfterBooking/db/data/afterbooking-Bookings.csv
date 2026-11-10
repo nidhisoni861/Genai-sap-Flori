@@ -1,0 +1,9 @@
+ID,bookingNumber,customerName,customerEmail,destination,departureDate,returnDate,numberOfTravellers,tripPrice,currency,changeFeesTotal,refundPercent,refundAmount,refundApprovalNeeded,status_code
+946e1279-0eff-53c0-a174-5489083adc6d,AB-1001,Sample Customer A,ab-1001@example.com,Mallorca,2027-06-10,2027-06-17,2,1500,EUR,0,,,false,Confirmed
+09b9e037-94a3-58ad-b8c0-46118d86c37b,AB-1002,Sample Customer B,ab-1002@example.com,Crete,2027-05-05,2027-05-12,3,800,EUR,0,,,false,Confirmed
+456d9c72-6411-5837-ae6d-87fff0d101ba,AB-1003,Sample Customer C,ab-1003@example.com,Lisbon,2026-11-28,2026-12-02,2,1200,EUR,0,,,false,Confirmed
+92c116d2-c261-5f40-85e6-05a8c4ecc8db,AB-1004,Sample Customer D,ab-1004@example.com,Oslo,2026-11-14,2026-11-18,1,600,EUR,0,,,false,Confirmed
+bfb640fc-0bd4-5c7d-b986-7851ce5b8f73,AB-1005,Sample Customer E,ab-1005@example.com,Rome,2027-02-01,2027-02-08,4,3200,EUR,50,,,false,Changed
+521c5609-5291-50f3-8ee9-2a3f73c1ebc5,AB-1006,Sample Customer F,ab-1006@example.com,Prague,2027-01-10,2027-01-14,2,900,EUR,0,,,false,Cancelled
+e03c8c1c-71ea-514e-ac4b-a3474dec5fee,AB-1007,Sample Customer G,ab-1007@example.com,Vienna,2027-03-01,2027-03-05,2,2000,EUR,0,90,1800,true,CancellationRequested
+dbbf0b72-55c0-54d6-9cc5-9ab5c008a901,AB-1008,Sample Customer H,ab-1008@example.com,Paris,2027-04-01,2027-04-04,1,700,EUR,0,90,630,false,Refunded

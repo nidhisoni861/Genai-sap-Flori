@@ -1,0 +1,11 @@
+Create a travel bookings overview application.
+
+Travel agency staff use it to see upcoming bookings and which ones need attention.
+
+Entity TravelBooking with these fields: booking number, customer name, customer email, destination, departure date, return date, number of travellers, total price, currency, amount paid, payment status (Paid, Partly Paid, Unpaid), booking status (Confirmed, Changed, Cancelled), customer notes, AI summary, AI priority (Low, Medium, High), AI alert, AI generated at.
+
+List page: show booking number, customer name, destination, departure date, payment status and AI priority. Filter by booking status, payment status, AI priority and destination.
+
+Object page: sections for trip details, payment, customer notes and AI insights.
+
+Add 12 sample bookings with invented customers and example.com emails. Leave the AI fields empty.

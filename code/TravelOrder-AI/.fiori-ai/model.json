@@ -1,0 +1,517 @@
+{
+    "namespace": "travelorderai",
+    "entities": [
+        {
+            "name": "BookingRequests",
+            "label": "Booking Request",
+            "labelPlural": "Booking Requests",
+            "associations": [
+                {
+                    "name": "AuditEntries",
+                    "target": "AuditEntries",
+                    "multiplicity": "many",
+                    "backAssociation": "bookingRequests"
+                }
+            ],
+            "elements": [
+                {
+                    "name": "ID",
+                    "type": "UUID",
+                    "key": true,
+                    "label": ""
+                },
+                {
+                    "name": "requestNumber",
+                    "type": "String(50)",
+                    "label": "Request Number",
+                    "additionalInfo": "Unique identifier for each booking request, semantic key",
+                    "essentialElement": true,
+                    "semanticKey": true
+                },
+                {
+                    "name": "receivedAt",
+                    "type": "DateTime",
+                    "label": "Received At",
+                    "additionalInfo": "Timestamp when the booking request was received",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "senderEmail",
+                    "type": "String(100)",
+                    "label": "Sender Email",
+                    "additionalInfo": "Email address of the customer who sent the booking request",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "subject",
+                    "type": "String(200)",
+                    "label": "Subject",
+                    "additionalInfo": "Subject line of the received email",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "originalMessage",
+                    "type": "String(255)",
+                    "label": "Original Message",
+                    "additionalInfo": "Full original email message text (long text)",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "language",
+                    "type": "String(10)",
+                    "label": "Language",
+                    "additionalInfo": "Language code of the booking request (e.g. EN, DE)",
+                    "key": false,
+                    "essentialElement": false,
+                    "values": [
+                        "EN",
+                        "DE"
+                    ],
+                    "hasFixedValuesList": true,
+                    "hasColorsOrCriticality": false,
+                    "reason": "Language values (EN, DE) are neutral identifiers of language and do not imply good or bad states.",
+                    "mapping": []
+                },
+                {
+                    "name": "customerNumber",
+                    "type": "String(20)",
+                    "label": "Customer Number",
+                    "additionalInfo": "Customer identifier in the system",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "tripProductCode",
+                    "type": "String(30)",
+                    "label": "Trip Product Code",
+                    "additionalInfo": "Code of the trip product requested",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "destination",
+                    "type": "String(100)",
+                    "label": "Destination",
+                    "additionalInfo": "Destination of the trip",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "departureDate",
+                    "type": "Date",
+                    "label": "Departure Date",
+                    "additionalInfo": "Planned departure date",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "returnDate",
+                    "type": "Date",
+                    "label": "Return Date",
+                    "additionalInfo": "Planned return date, must be after departureDate",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "numberOfTravellers",
+                    "type": "Integer",
+                    "label": "Number Of Travellers",
+                    "additionalInfo": "Number of travellers, minimum 1",
+                    "isQuantity": true,
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "budget",
+                    "type": "Decimal",
+                    "label": "Budget",
+                    "additionalInfo": "Budget amount for the trip, must not be negative",
+                    "isAmount": true,
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "currency",
+                    "type": "String(3)",
+                    "label": "Currency",
+                    "additionalInfo": "Currency code for the budget (ISO 4217)",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "missingInformation",
+                    "type": "String(255)",
+                    "label": "Missing Information",
+                    "additionalInfo": "Long text describing any missing information in the request",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "aiRecommendation",
+                    "type": "String(255)",
+                    "label": "Ai Recommendation",
+                    "additionalInfo": "AI generated recommendation text",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "aiConfidence",
+                    "type": "Decimal",
+                    "label": "Ai Confidence",
+                    "additionalInfo": "AI confidence score from 0 to 100",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "reviewerComment",
+                    "type": "String(255)",
+                    "label": "Reviewer Comment",
+                    "additionalInfo": "Reviewer comments, required for rejection",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "status",
+                    "type": "String(30)",
+                    "label": "Status",
+                    "additionalInfo": "Status of the booking request: New, Needs Information, Ready for Review, Approved, Rejected, Order Created, Failed",
+                    "key": false,
+                    "essentialElement": true,
+                    "values": [
+                        "New",
+                        "Needs Information",
+                        "Ready for Review",
+                        "Approved",
+                        "Rejected",
+                        "Order Created",
+                        "Failed"
+                    ],
+                    "hasFixedValuesList": true,
+                    "hasColorsOrCriticality": true,
+                    "reason": "Status values represent different stages and outcomes of the booking request process, some positive (Approved, Order Created), some negative (Rejected, Failed), and some critical or neutral (New, Needs Information, Ready for Review). Coloring helps users quickly identify the state.",
+                    "mapping": [
+                        {
+                            "value": "New",
+                            "colorOrCriticality": "grey",
+                            "reason": "New is a neutral initial state indicating a fresh booking request."
+                        },
+                        {
+                            "value": "Needs Information",
+                            "colorOrCriticality": "yellow",
+                            "reason": "Needs Information indicates a critical state requiring user action to proceed."
+                        },
+                        {
+                            "value": "Ready for Review",
+                            "colorOrCriticality": "grey",
+                            "reason": "Ready for Review is a neutral state indicating the request is prepared for decision."
+                        },
+                        {
+                            "value": "Approved",
+                            "colorOrCriticality": "green",
+                            "reason": "Approved is a positive state indicating successful approval."
+                        },
+                        {
+                            "value": "Rejected",
+                            "colorOrCriticality": "red",
+                            "reason": "Rejected is a negative state indicating the request was declined."
+                        },
+                        {
+                            "value": "Order Created",
+                            "colorOrCriticality": "green",
+                            "reason": "Order Created is a positive state indicating successful creation of a sales order."
+                        },
+                        {
+                            "value": "Failed",
+                            "colorOrCriticality": "red",
+                            "reason": "Failed is a negative state indicating an error or failure in processing."
+                        }
+                    ],
+                    "criticalities": [
+                        0,
+                        2,
+                        0,
+                        3,
+                        1,
+                        3,
+                        1
+                    ]
+                },
+                {
+                    "name": "salesOrderNumber",
+                    "type": "String(50)",
+                    "label": "Sales Order Number",
+                    "additionalInfo": "Sales order number created in SAP S/4HANA after approval",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "errorMessage",
+                    "type": "String(255)",
+                    "label": "Error Message",
+                    "additionalInfo": "Error message if processing failed",
+                    "key": false,
+                    "essentialElement": false
+                }
+            ]
+        },
+        {
+            "name": "AuditEntries",
+            "label": "Audit Entry",
+            "labelPlural": "Audit Entries",
+            "associations": [
+                {
+                    "name": "bookingRequests",
+                    "target": "BookingRequests",
+                    "multiplicity": "one",
+                    "isComposition": false
+                }
+            ],
+            "elements": [
+                {
+                    "name": "ID",
+                    "type": "UUID",
+                    "key": true,
+                    "label": ""
+                },
+                {
+                    "name": "auditEntryId",
+                    "type": "String(50)",
+                    "label": "Audit Entry Id",
+                    "additionalInfo": "Unique identifier for audit entry",
+                    "essentialElement": true,
+                    "semanticKey": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "DateTime",
+                    "label": "Timestamp",
+                    "additionalInfo": "Timestamp when the audit action was performed",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "performedBy",
+                    "type": "String(100)",
+                    "label": "Performed By",
+                    "additionalInfo": "User or system who performed the action",
+                    "key": false,
+                    "essentialElement": true
+                },
+                {
+                    "name": "action0",
+                    "type": "String(50)",
+                    "label": "Action",
+                    "additionalInfo": "Action performed (e.g. Approve, Reject, Request Information, Edit)",
+                    "key": false,
+                    "essentialElement": true,
+                    "values": [
+                        "Approve",
+                        "Reject",
+                        "Request Information",
+                        "Edit"
+                    ],
+                    "hasFixedValuesList": true,
+                    "hasColorsOrCriticality": true,
+                    "reason": "Audit actions represent user decisions or changes that can be positive (Approve), negative (Reject), or critical (Request Information). Coloring helps distinguish the nature of the action.",
+                    "mapping": [
+                        {
+                            "value": "Approve",
+                            "colorOrCriticality": "green",
+                            "reason": "Approve is a positive action indicating acceptance."
+                        },
+                        {
+                            "value": "Reject",
+                            "colorOrCriticality": "red",
+                            "reason": "Reject is a negative action indicating denial."
+                        },
+                        {
+                            "value": "Request Information",
+                            "colorOrCriticality": "yellow",
+                            "reason": "Request Information is a critical action requesting further input."
+                        },
+                        {
+                            "value": "Edit",
+                            "colorOrCriticality": "grey",
+                            "reason": "Edit is a neutral action indicating modification without inherent positive or negative connotation."
+                        }
+                    ],
+                    "criticalities": [
+                        3,
+                        1,
+                        2,
+                        0
+                    ]
+                },
+                {
+                    "name": "fieldName",
+                    "type": "String(50)",
+                    "label": "Field Name",
+                    "additionalInfo": "Name of the field changed or affected",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "aiValue",
+                    "type": "String(255)",
+                    "label": "Ai Value",
+                    "additionalInfo": "Value suggested by AI before review",
+                    "key": false,
+                    "essentialElement": false
+                },
+                {
+                    "name": "finalValue",
+                    "type": "String(255)",
+                    "label": "Final Value",
+                    "additionalInfo": "Final value after review or change",
+                    "key": false,
+                    "essentialElement": false
+                }
+            ]
+        }
+    ],
+    "service": {
+        "name": "travelorderaiSrv",
+        "path": "srv/service.cds"
+    },
+    "applications": [
+        {
+            "pages": [
+                {
+                    "type": "ListReport",
+                    "entityType": "BookingRequests",
+                    "listReportContent": {
+                        "loadDataOnAppLaunch": "Auto",
+                        "filters": [
+                            "status",
+                            "destination",
+                            "departureDate",
+                            "receivedAt"
+                        ],
+                        "tables": [
+                            {
+                                "id": "BookingRequestsTable",
+                                "title": "Booking Requests",
+                                "baseEntityType": "BookingRequests",
+                                "columns": [
+                                    "requestNumber",
+                                    "receivedAt",
+                                    "senderEmail",
+                                    "subject",
+                                    "language",
+                                    "customerNumber",
+                                    "tripProductCode",
+                                    "destination",
+                                    "departureDate",
+                                    "returnDate",
+                                    "numberOfTravellers",
+                                    "budget",
+                                    "currency",
+                                    "status",
+                                    "salesOrderNumber",
+                                    "errorMessage"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "ObjectPage",
+                    "entityType": "BookingRequests",
+                    "objectPageContent": {
+                        "tableSectionAssociations": [
+                            "AuditEntries"
+                        ],
+                        "sections": [
+                            {
+                                "title": "Original Message",
+                                "id": "originalMessageSection",
+                                "fields": [
+                                    "originalMessage"
+                                ]
+                            },
+                            {
+                                "title": "Booking Details",
+                                "id": "bookingDetailsSection",
+                                "fields": [
+                                    "requestNumber",
+                                    "receivedAt",
+                                    "senderEmail",
+                                    "subject",
+                                    "language",
+                                    "customerNumber",
+                                    "tripProductCode",
+                                    "destination",
+                                    "departureDate",
+                                    "returnDate",
+                                    "numberOfTravellers",
+                                    "budget",
+                                    "currency"
+                                ]
+                            },
+                            {
+                                "title": "AI Recommendation and Review",
+                                "id": "aiReviewSection",
+                                "fields": [
+                                    "aiRecommendation",
+                                    "aiConfidence",
+                                    "reviewerComment",
+                                    "status",
+                                    "salesOrderNumber",
+                                    "errorMessage"
+                                ]
+                            },
+                            {
+                                "title": "Audit History",
+                                "id": "auditEntriesTableSection",
+                                "isTableSection": true,
+                                "fields": [
+                                    "AuditEntries/auditEntryId",
+                                    "AuditEntries/timestamp",
+                                    "AuditEntries/performedBy",
+                                    "AuditEntries/action0",
+                                    "AuditEntries/fieldName",
+                                    "AuditEntries/aiValue",
+                                    "AuditEntries/finalValue"
+                                ]
+                            }
+                        ],
+                        "tabs": [
+                            {
+                                "id": "detailsTab",
+                                "title": "Details",
+                                "subsections": [
+                                    "originalMessageSection",
+                                    "bookingDetailsSection",
+                                    "aiReviewSection"
+                                ]
+                            },
+                            {
+                                "id": "auditTab",
+                                "title": "Audit",
+                                "subsections": [
+                                    "auditEntriesTableSection"
+                                ]
+                            }
+                        ],
+                        "chartSections": []
+                    }
+                },
+                {
+                    "type": "ObjectPage",
+                    "entityType": "AuditEntries",
+                    "objectPageContent": {
+                        "tableSectionAssociations": [],
+                        "sections": [],
+                        "tabs": [],
+                        "chartSections": []
+                    }
+                }
+            ],
+            "name": "travelOrderAiIntake"
+        }
+    ]
+}

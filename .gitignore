@@ -1,0 +1,20 @@
+# Secrets - never commit
+.env
+.env.*
+default-env*.json
+.cdsrc-private*
+*.pem
+*.key
+
+# Build output and dependencies
+node_modules/
+gen/
+mta_archives/
+*.mtar
+dist/
+*.map
+
+# Local databases and OS files
+*.sqlite
+*.db
+.DS_Store
