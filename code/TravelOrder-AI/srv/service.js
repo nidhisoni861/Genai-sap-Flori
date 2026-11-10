@@ -2,6 +2,7 @@ import cds from '@sap/cds';
 import { extractBooking } from './ai-extraction.js';
 import { checkBooking } from './booking-checks.js';
 import { createSalesOrder } from './s4-sales-order.js';
+import { forwardTrip } from './trip-forward.js';
 
 export default class travelorderaiSrv extends cds.ApplicationService {
   init() {
@@ -104,6 +105,25 @@ export default class travelorderaiSrv extends cds.ApplicationService {
         finalValue: result.ok ? result.salesOrder : result.message.slice(0, 250),
         bookingRequests_ID: ID
       });
+
+      // Same trip continues to Bookings Overview and After-Booking. A failure there is shown
+      // as a warning only; the sales order in S/4HANA stays.
+      if (result.ok) {
+        const forward = await forwardTrip(booking, result.salesOrder);
+        const allOk = forward.results.every(r => r.ok);
+        await INSERT.into(db.AuditEntries).entries({
+          auditEntryId: `AE-${cds.utils.uuid()}`,
+          timestamp: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+          performedBy: req.user.id,
+          action0_code: 'ForwardBooking',
+          fieldName: 'bookingNumber',
+          aiValue: null,
+          finalValue: forward.results.map(r => r.message).join('; ').slice(0, 250),
+          bookingRequests_ID: ID
+        });
+        const text = `Sales order ${result.salesOrder} created. ${forward.results.map(r => r.message).join('. ')}.`;
+        if (allOk) req.info(text); else req.warn(text);
+      }
     });
 
     this.on('rejectRequest', BookingRequests, req => {

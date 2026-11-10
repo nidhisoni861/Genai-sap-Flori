@@ -30,6 +30,13 @@
   input { flex:1; padding:10px 12px; border:1px solid #89919a; border-radius:6px; font-size:14px; }
   form button { background:var(--blue); color:#fff; border:none; padding:0 20px; border-radius:6px; font-size:14px; cursor:pointer; }
   form button:disabled { opacity:.5; cursor:default; }
+  .send-box { margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; white-space:normal; }
+  .send-box input { flex:0 1 240px; padding:7px 10px; font-size:13px; }
+  .send-box button { background:#107e3e; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:13px; cursor:pointer; }
+  .send-box button:disabled { opacity:.6; cursor:default; }
+  .send-status { flex-basis:100%; font-size:13px; color:#107e3e; }
+  .send-status.error { color:#bb0000; background:none; }
+  .examples button.flow-example { border-color:#107e3e; color:#107e3e; font-weight:600; }
   .clear { background:none; border:none; color:var(--blue); cursor:pointer; font-size:12px; align-self:flex-end; margin-bottom:4px; }
 </style>
 </head>
@@ -59,6 +66,7 @@
     'Request: departure 20 July 2027, return 10 July 2027, 2 travellers, budget 2,000 EUR.',
     'Trip 1,100 EUR, cancelled 40 days before departure.',
   ];
+  const fullFlowExample = 'Request: 2 travellers to Barcelona, departure 1 August 2027, return 8 August 2027, budget 2,400 EUR.';
   const history = [];
   const chat = document.getElementById('chat');
   const input = document.getElementById('input');
@@ -72,6 +80,50 @@
     b.onclick = () => { input.value = q; input.focus(); };
     ex.appendChild(b);
   });
+  const ff = document.createElement('button');
+  ff.textContent = 'Full flow trip';
+  ff.title = fullFlowExample;
+  ff.className = 'flow-example';
+  ff.onclick = () => { input.value = fullFlowExample; input.focus(); };
+  ex.appendChild(ff);
+
+  // A complete booking request can be sent on to TravelOrder Intake (Project 2) on SAP BTP.
+  function offerSend(container, requestText) {
+    const box = document.createElement('div');
+    box.className = 'send-box';
+    const email = document.createElement('input');
+    email.type = 'email';
+    email.placeholder = 'Customer email';
+    email.value = 'anna.smith@example.com';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Send to Intake (Project 2)';
+    const status = document.createElement('div');
+    status.className = 'send-status';
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/send-to-intake', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: requestText, senderEmail: email.value }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Sending failed');
+        btn.textContent = 'Sent';
+        status.textContent = `Created in TravelOrder Intake as ${data.requestNumber}. Open Intake and run the AI extraction.`;
+        email.disabled = true;
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Send to Intake (Project 2)';
+        status.textContent = `Error: ${err.message}`;
+        status.classList.add('error');
+      }
+    };
+    box.append(email, btn, status);
+    container.appendChild(box);
+  }
 
   function add(role, text, toolCalls) {
     const div = document.createElement('div');
@@ -112,6 +164,9 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Request failed');
       add('bot', data.reply, data.toolCalls);
+      const complete = (data.toolCalls || []).some(
+        (t) => t.name === 'checkBookingRequest' && t.output && t.output.result === 'complete and ready for review');
+      if (complete) offerSend(chat.lastElementChild, text);
       history.push({ role: 'assistant', content: data.reply });
     } catch (err) {
       add('bot error', `Error: ${err.message}`);

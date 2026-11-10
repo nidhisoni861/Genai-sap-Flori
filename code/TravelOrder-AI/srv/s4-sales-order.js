@@ -8,7 +8,12 @@ export function toSalesOrder(b) {
     SoldToParty: b.customerNumber,
     PurchaseOrderByCustomer: b.requestNumber,
     RequestedDeliveryDate: b.departureDate,
-    to_Item: [{ Material: b.tripProductCode, RequestedQuantity: b.numberOfTravellers }]
+    to_Item: [{
+      Material: b.tripProductCode,
+      RequestedQuantity: b.numberOfTravellers,
+      // Custom trips (from the TravelOrder Assistant) have no list price: the customer budget is the net amount.
+      ...(b.tripProductCode === 'TRIPCUSTOM' ? { NetAmount: b.budget } : {})
+    }]
   };
 }
 

@@ -8,7 +8,9 @@ export const CUSTOMERS = {
   CUST12345: 'Sample Customer 12345', CUST54321: 'Sample Customer 54321', CUST67890: 'Sample Customer 67890',
   CUST11223: 'Sample Customer 11223', CUST33445: 'Sample Customer 33445', CUST55667: 'Sample Customer 55667',
   CUST77889: 'Sample Customer 77889', CUST99001: 'Sample Customer 99001', CUST22334: 'Sample Customer 22334',
-  CUST44556: 'Sample Customer 44556'
+  CUST44556: 'Sample Customer 44556',
+  // Customer account for requests that come from the TravelOrder Assistant (Project 1).
+  CUST00001: 'TravelOrder Assistant customer'
 };
 // Price per traveller.
 export const PRODUCTS = {
@@ -21,7 +23,9 @@ export const PRODUCTS = {
   TRIPNZ2024: { text: 'New Zealand round trip', price: 3200, currency: 'USD' },
   TRIPJAPAN2024: { text: 'Japan round trip', price: 2600, currency: 'EUR' },
   TRIPMALDIVES2024: { text: 'Maldives beach trip', price: 3500, currency: 'USD' },
-  TRIPPRAGUE2024: { text: 'Prague city trip', price: 700, currency: 'EUR' }
+  TRIPPRAGUE2024: { text: 'Prague city trip', price: 700, currency: 'EUR' },
+  // Custom trip from the TravelOrder Assistant: no list price, the item net amount (customer budget) is used.
+  TRIPCUSTOM: { text: 'Custom trip', price: null, currency: 'EUR' }
 };
 const ORG = { SalesOrderType: 'OR', SalesOrganization: '1010', DistributionChannel: '10', OrganizationDivision: '00' };
 
@@ -42,6 +46,9 @@ export default class MockS4Service extends cds.ApplicationService {
         if (!PRODUCTS[it.Material]) req.error(400, `Material ${it.Material || '(empty)'} does not exist.`);
         const q = Number(it.RequestedQuantity);
         if (!Number.isInteger(q) || q < 1) req.error(400, `Quantity for ${it.Material} must be a whole number of at least 1.`);
+        if (PRODUCTS[it.Material]?.price === null && !(Number(it.NetAmount) > 0)) {
+          req.error(400, `Material ${it.Material} has no list price; a net amount greater than 0 is required.`);
+        }
       }
       if (req.errors) return;
 
@@ -51,7 +58,7 @@ export default class MockS4Service extends cds.ApplicationService {
       let total = 0;
       req._items = items.map((it, i) => {
         const p = PRODUCTS[it.Material];
-        const amount = p.price * Number(it.RequestedQuantity);
+        const amount = p.price === null ? Number(it.NetAmount) : p.price * Number(it.RequestedQuantity);
         total += amount;
         return { SalesOrder: number, SalesOrderItem: String((i + 1) * 10), Material: it.Material, SalesOrderItemText: p.text,
           RequestedQuantity: Number(it.RequestedQuantity), RequestedQuantityUnit: 'EA', NetAmount: amount, TransactionCurrency: p.currency };

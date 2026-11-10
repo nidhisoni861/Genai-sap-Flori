@@ -2,6 +2,7 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { ask } from './agent.js';
+import { sendToIntake } from './intake.js';
 
 const PORT = Number(process.env.PORT) || 4010;
 const page = new URL('./public/index.html', import.meta.url);
@@ -31,6 +32,12 @@ const server = http.createServer(async (req, res) => {
         .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .slice(-20);
       return send(res, 200, await ask(clean));
+    }
+    if (req.method === 'POST' && req.url === '/api/send-to-intake') {
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      const { message, senderEmail } = JSON.parse(raw || '{}');
+      return send(res, 200, await sendToIntake({ message, senderEmail }));
     }
     send(res, 404, { error: 'Not found' });
   } catch (err) {
