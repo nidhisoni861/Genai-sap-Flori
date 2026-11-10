@@ -5,7 +5,7 @@ BTP trial stops HANA Cloud and all apps every night. Without these steps every a
 Start 40 minutes before the exam.
 
 1. Open SAP Business Application Studio (dev space ws-18b6c), open a terminal and run:
-   ~/start-exam.sh
+   ~/start-exam.sh   (copy in this repo: scripts/start-exam.sh)
    It starts HANA Cloud, waits until it is ready, then starts the 6 apps.
    Check progress with: cat ~/start-exam.log
    Done when the last line is "ALL DONE" and the three lines before it start with 200 or 302.
